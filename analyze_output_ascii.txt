@@ -1,0 +1,24 @@
+Analyzing settings_screen.dart...                               
+
+   info - Statements in an if should be enclosed in a block - lib\presentation\screens\settings\settings_screen.dart:31:19 - curly_braces_in_flow_control_structures
+  error - The function 'ListToCsvConverter' isn't defined - lib\presentation\screens\settings\settings_screen.dart:70:26 - undefined_function
+   info - Don't use 'BuildContext's across async gaps - lib\presentation\screens\settings\settings_screen.dart:77:7 - use_build_context_synchronously
+
+flutter : 3 issues 
+found. (ran in 1.5s)
+At line:1 char:1
++ flutter analyze lib\pre
+sentation\screens\setting
+s\settings_screen.dar ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (3 issues found. (ra   
+ n in 1.5s):String) [    
+], RemoteException
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
