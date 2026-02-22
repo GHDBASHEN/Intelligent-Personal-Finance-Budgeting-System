@@ -26,8 +26,9 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: FutureBuilder<Map<String, dynamic>>(
               future: currencyService.getExchangeRates('USD'),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting)
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Text('Loading...');
+                }
                 if (snapshot.hasError) return const Text('Error loading rates');
                 final rates = snapshot.data?['rates'] as Map<String, dynamic>?;
                 return Text('1 USD = ${(rates?['LKR'] ?? 'N/A')} LKR');

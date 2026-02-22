@@ -71,7 +71,7 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '\$ \${amount.toStringAsFixed(2)}',
+              '\$${amount.toStringAsFixed(2)}',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ],
