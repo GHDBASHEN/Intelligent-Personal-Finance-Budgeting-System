@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import '../screens/auth/auth_screens.dart';
 import '../screens/main_layout.dart';
 import '../screens/dashboard/dashboard_analytics_screen.dart';
+import '../screens/dashboard/past_details_screen.dart';
 import '../screens/transactions/transactions_list_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/settings/receipt_scan_screen.dart';
@@ -33,6 +34,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(path: '/receipt-scan', builder: (context, state) => const ReceiptScanScreen()),
+      GoRoute(path: '/dashboard/past-details', builder: (context, state) => const PastDetailsScreen()),
     ],
   );
 });
