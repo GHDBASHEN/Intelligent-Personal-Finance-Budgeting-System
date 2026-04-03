@@ -21,7 +21,17 @@ class AuthState {
 class AuthNotifier extends Notifier<AuthState> {
   @override
   AuthState build() {
-    return AuthState();
+    _checkCurrentUser();
+    return AuthState(isLoading: true);
+  }
+
+  Future<void> _checkCurrentUser() async {
+    try {
+      final user = await ref.read(authRepositoryProvider).getCurrentUser();
+      state = state.copyWith(user: user, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+    }
   }
 
   Future<void> login(String email, String password) async {
