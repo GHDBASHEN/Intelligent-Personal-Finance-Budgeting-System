@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/infrastructure_providers.dart';
+import '../../providers/theme_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -20,6 +21,20 @@ class SettingsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
+          Consumer(
+            builder: (context, ref, child) {
+              final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
+              return SwitchListTile(
+                title: const Text('Dark Mode'),
+                secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
+                value: isDarkMode,
+                onChanged: (val) {
+                  ref.read(themeModeProvider.notifier).toggleTheme(val);
+                },
+              );
+            },
+          ),
+          const Divider(),
           ListTile(
             leading: const Icon(Icons.currency_exchange),
             title: const Text('Exchange Rates (Mock)'),

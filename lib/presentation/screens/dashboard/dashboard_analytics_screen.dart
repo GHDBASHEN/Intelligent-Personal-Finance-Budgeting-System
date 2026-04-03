@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import '../../providers/transaction_provider.dart';
 import '../../../domain/entities/transaction_entity.dart';
 
@@ -10,36 +12,96 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(transactionProvider);
-    final transactions = state.transactions;
+    
+    final now = DateTime.now();
+    final todayTransactions = state.transactions.where((t) {
+      return t.date.year == now.year &&
+             t.date.month == now.month &&
+             t.date.day == now.day;
+    }).toList();
 
-    final income = transactions
+    todayTransactions.sort((a, b) => b.date.compareTo(a.date));
+
+    final todayIncome = todayTransactions
         .where((t) => t.type == TransactionType.income)
         .fold(0.0, (sum, t) => sum + t.amount);
-    final expense = transactions
+    final todayExpense = todayTransactions
         .where((t) => t.type == TransactionType.expense)
         .fold(0.0, (sum, t) => sum + t.amount);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Financial Analytics')),
+      appBar: AppBar(title: const Text("Today's Dashboard")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSummaryCards(income, expense),
-            const SizedBox(height: 24),
             const Text(
-              'Income vs Expense',
+              'Daily Summary',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            SizedBox(height: 200, child: _buildPieChart(income, expense)),
-            const SizedBox(height: 24),
+            _buildSummaryCards(todayIncome, todayExpense),
+            const SizedBox(height: 32),
             const Text(
-              'Recent Activity',
+              "Today's Expense Trend",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildBarChart(transactions),
+            _buildTodayLineChart(todayTransactions),
+            const SizedBox(height: 32),
+            const Text(
+              "Today's Activity",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            if (todayTransactions.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Text('No transactions yet today.'),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: todayTransactions.length,
+                itemBuilder: (context, index) {
+                  final tx = todayTransactions[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: tx.type == TransactionType.income 
+                          ? Colors.green.withOpacity(0.2) 
+                          : Colors.red.withOpacity(0.2),
+                      child: Icon(
+                        tx.type == TransactionType.income ? Icons.arrow_downward : Icons.arrow_upward,
+                        color: tx.type == TransactionType.income ? Colors.green : Colors.red,
+                      ),
+                    ),
+                    title: Text(tx.note),
+                    subtitle: Text(DateFormat.jm().format(tx.date)),
+                    trailing: Text(
+                      '\$${tx.amount.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: tx.type == TransactionType.income ? Colors.green : Colors.red,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  context.push('/dashboard/past-details');
+                },
+                icon: const Icon(Icons.history),
+                label: const Text('View past data with details'),
+              ),
+            ),
           ],
         ),
       ),
@@ -50,10 +112,10 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
     return Row(
       children: [
         Expanded(
-          child: _summaryCard('Net Balance', income - expense, Colors.blue),
+          child: _summaryCard("Today's Balance", income - expense, Colors.blue),
         ),
         const SizedBox(width: 8),
-        Expanded(child: _summaryCard('Expenses', expense, Colors.red)),
+        Expanded(child: _summaryCard("Today's Expenses", expense, Colors.red)),
       ],
     );
   }
@@ -68,6 +130,7 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
             Text(
               title,
               style: TextStyle(color: color, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
@@ -80,47 +143,63 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPieChart(double income, double expense) {
-    return PieChart(
-      PieChartData(
-        sections: [
-          PieChartSectionData(
-            value: income,
-            color: Colors.green,
-            title: 'Income',
-            radius: 50,
-            titleStyle: const TextStyle(color: Colors.white),
-          ),
-          PieChartSectionData(
-            value: expense,
-            color: Colors.red,
-            title: 'Expense',
-            radius: 50,
-            titleStyle: const TextStyle(color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildTodayLineChart(List<TransactionEntity> transactions) {
+    final expenses = transactions.where((t) => t.type == TransactionType.expense).toList();
+    // Sort chronologically for line chart
+    expenses.sort((a, b) => a.date.compareTo(b.date));
 
-  Widget _buildBarChart(List<TransactionEntity> transactions) {
-    // Simplified bar chart showing count of transactions per day
+    List<FlSpot> spots = [];
+    double cumulative = 0;
+    
+    if (expenses.isEmpty) {
+      spots = [const FlSpot(0, 0), const FlSpot(24, 0)];
+    } else {
+      for (var tx in expenses) {
+        cumulative += tx.amount;
+        spots.add(FlSpot(tx.date.hour.toDouble() + (tx.date.minute / 60.0), cumulative));
+      }
+      if (spots.isNotEmpty && spots.first.x > 0) {
+        spots.insert(0, const FlSpot(0, 0));
+      }
+    }
+
     return SizedBox(
       height: 200,
-      child: BarChart(
-        BarChartData(
-          barGroups: [
-            BarChartGroupData(
-              x: 1,
-              barRods: [BarChartRodData(toY: 5, color: Colors.blue)],
+      child: LineChart(
+        LineChartData(
+          gridData: const FlGridData(show: true, drawVerticalLine: false),
+          titlesData: FlTitlesData(
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 22,
+                getTitlesWidget: (value, meta) {
+                  if (value % 6 == 0 && value >= 0 && value <= 24) {
+                    return Text('${value.toInt()}h', style: const TextStyle(fontSize: 10));
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
-            BarChartGroupData(
-              x: 2,
-              barRods: [BarChartRodData(toY: 8, color: Colors.blue)],
-            ),
-            BarChartGroupData(
-              x: 3,
-              barRods: [BarChartRodData(toY: 3, color: Colors.blue)],
+          ),
+          borderData: FlBorderData(show: false),
+          minX: 0,
+          maxX: 24,
+          minY: 0,
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              color: Colors.redAccent,
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                color: Colors.redAccent.withOpacity(0.2),
+              ),
             ),
           ],
         ),
