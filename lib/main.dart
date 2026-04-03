@@ -17,6 +17,7 @@ class MyApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       title: 'Finance System',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.neonTheme,
