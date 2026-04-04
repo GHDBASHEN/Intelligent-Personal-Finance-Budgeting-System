@@ -46,7 +46,7 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
-                  _buildSummaryCards(todayIncome, todayExpense, ref.watch(currencyStateProvider)),
+                  _buildSummaryCards(todayIncome, todayExpense, ref.watch(currencyStateProvider), ref),
                   const SizedBox(height: 32),
                   const Text(
                     "Today's Trend",
@@ -87,7 +87,9 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
                           title: Text(tx.note),
                           subtitle: Text(DateFormat.jm().format(tx.date)),
                           trailing: Text(
-                            '\$${tx.amount.toStringAsFixed(2)}',
+                            ref.read(currencyStateProvider.notifier).format(
+                                ref.read(currencyStateProvider.notifier).convert(tx.amount)
+                            ),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: tx.type == TransactionType.income ? Colors.green : Colors.red,
@@ -118,23 +120,21 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryCards(double income, double expense, CurrencyState cState) {
+  Widget _buildSummaryCards(double income, double expense, CurrencyState cState, WidgetRef ref) {
     return Row(
       children: [
         Expanded(
-          child: _summaryCard("Today's Balance", income - expense, Colors.blue, cState),
+          child: _summaryCard("Today's Balance", income - expense, Colors.blue, ref),
         ),
         const SizedBox(width: 8),
-        Expanded(child: _summaryCard("Today's Expenses", expense, Colors.red, cState)),
+        Expanded(child: _summaryCard("Today's Expenses", expense, Colors.red, ref)),
       ],
     );
   }
 
-  Widget _summaryCard(String title, double amount, Color color, CurrencyState cState) {
-    final bool showConversion = cState.targetCurrency != cState.baseCurrency;
-    final double converted = showConversion 
-        ? amount * (cState.rates[cState.targetCurrency] ?? 1.0) 
-        : amount;
+  Widget _summaryCard(String title, double amount, Color color, WidgetRef ref) {
+    final currencyNotifier = ref.read(currencyStateProvider.notifier);
+    final converted = currencyNotifier.convert(amount);
 
     return Card(
       child: Padding(
@@ -148,17 +148,9 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              '\$${amount.toStringAsFixed(2)}',
+              currencyNotifier.format(converted),
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            if (showConversion)
-              Padding(
-                padding: const EdgeInsets.only(top: 4.0),
-                child: Text(
-                  '≈ ${converted.toStringAsFixed(2)} ${cState.targetCurrency}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
-                ),
-              ),
           ],
         ),
       ),

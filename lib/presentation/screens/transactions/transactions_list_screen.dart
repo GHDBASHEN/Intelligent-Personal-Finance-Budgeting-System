@@ -47,8 +47,7 @@ class _TransactionsListScreenState
   Widget build(BuildContext context) {
     final state = ref.watch(transactionProvider);
     final filteredTransactions = ref.watch(filteredTransactionsProvider);
-    final currencyState = ref.watch(currencyStateProvider);
-    final showConversion = currencyState.targetCurrency != currencyState.baseCurrency;
+    final currencyNotifier = ref.watch(currencyStateProvider.notifier);
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -116,29 +115,15 @@ class _TransactionsListScreenState
               ),
               title: Text(tx.note.isEmpty ? 'Transaction' : tx.note),
               subtitle: Text(DateFormat.yMMMd().format(tx.date)),
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${tx.type == TransactionType.income ? '+' : '-'} \$${tx.amount.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: tx.type == TransactionType.income
-                          ? Colors.green
-                          : Colors.red,
-                    ),
-                  ),
-                  if (showConversion)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4.0),
-                      child: Text(
-                        '≈ ${(tx.amount * (currencyState.rates[currencyState.targetCurrency] ?? 1.0)).toStringAsFixed(2)} ${currencyState.targetCurrency}',
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                ],
+              trailing: Text(
+                '${tx.type == TransactionType.income ? '+' : '-'} ${currencyNotifier.format(currencyNotifier.convert(tx.amount))}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: tx.type == TransactionType.income
+                      ? Colors.green
+                      : Colors.red,
+                ),
               ),
               onLongPress: () => ref
                   .read(transactionProvider.notifier)
