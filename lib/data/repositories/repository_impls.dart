@@ -234,7 +234,8 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<UserEntity?> getCurrentUser() async {
-    final firebaseUser = _firebaseAuth.currentUser;
+    // Wait for the first emitted state to guarantee Firebase has restored the native session
+    final firebaseUser = await _firebaseAuth.authStateChanges().first;
     if (firebaseUser != null && firebaseUser.email != null) {
       final db = await _dbHelper.database;
       final List<Map<String, dynamic>> maps = await db.query(
@@ -244,6 +245,20 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       );
       if (maps.isNotEmpty) {
         return UserEntity.fromMap(maps.first);
+      } else {
+        // Hydrate local database if session exists in Firebase but not locally
+        final newUser = UserEntity(
+          username: firebaseUser.displayName ?? firebaseUser.email!.split('@')[0],
+          email: firebaseUser.email!,
+          password: 'firebase_auth',
+        );
+        final id = await db.insert('users', newUser.toMap());
+        return UserEntity(
+          id: id,
+          username: newUser.username,
+          email: newUser.email,
+          password: newUser.password,
+        );
       }
     }
     return null;
