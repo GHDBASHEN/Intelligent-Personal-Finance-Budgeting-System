@@ -8,6 +8,8 @@ import '../../providers/category_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/currency_state_provider.dart';
 import '../../widgets/custom_app_bar.dart';
+import '../../../data/sources/remote/open_food_facts_service.dart';
+import 'scanner_screen.dart';
 
 class TransactionFormScreen extends ConsumerStatefulWidget {
   final TransactionEntity? transaction;
@@ -20,8 +22,8 @@ class TransactionFormScreen extends ConsumerStatefulWidget {
 
 class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _noteController = TextEditingController();
   late double _amount;
-  late String _note;
   late DateTime _selectedDate;
   late TransactionType _type;
   int? _selectedCategoryId;
@@ -31,10 +33,16 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
   void initState() {
     super.initState();
     _amount = widget.transaction?.amount ?? 0;
-    _note = widget.transaction?.note ?? '';
+    _noteController.text = widget.transaction?.note ?? '';
     _selectedDate = widget.transaction?.date ?? DateTime.now();
     _type = widget.transaction?.type ?? TransactionType.expense;
     _selectedCategoryId = widget.transaction?.categoryId;
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
   }
 
   void _saveForm() {
@@ -56,7 +64,13 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
         }
       }
 
-      if (user == null || categoryId == null) return;
+      if (user == null || categoryId == null) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error: User or category is missing. Please restart the app or select a category.')),
+        );
+        return;
+      }
 
       double finalAmount = _amount;
       if (_selectedEntryCurrency != null) {
@@ -73,7 +87,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
         userId: user.id!,
         categoryId: categoryId,
         amount: finalAmount,
-        note: _note,
+        note: _noteController.text,
         date: _selectedDate,
         type: _type,
       );
@@ -200,9 +214,9 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                initialValue: _note,
+                controller: _noteController,
                 decoration: InputDecoration(
-                  labelText: 'Note',
+                  labelText: 'Note / Product',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -212,8 +226,30 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                     context,
                   ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
                   prefixIcon: const Icon(Icons.note),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.qr_code_scanner, color: Colors.blueAccent),
+                    tooltip: 'Scan Product Barcode',
+                    onPressed: () async {
+                      final barcode = await Navigator.of(context).push<String>(
+                        MaterialPageRoute(builder: (_) => const ScannerScreen()),
+                      );
+                      if (barcode != null && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fetching product details...')));
+                        final productName = await OpenFoodFactsService().getProductName(barcode);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          if (productName != null) {
+                            setState(() {
+                              _noteController.text = productName;
+                            });
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Product not found in Open Food Facts')));
+                          }
+                        }
+                      }
+                    },
+                  ),
                 ),
-                onSaved: (val) => _note = val ?? '',
               ),
               const SizedBox(height: 24),
               ElevatedButton(

@@ -244,6 +244,20 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       );
       if (maps.isNotEmpty) {
         return UserEntity.fromMap(maps.first);
+      } else {
+        // Hydrate local database if session exists in Firebase but not locally
+        final newUser = UserEntity(
+          username: firebaseUser.displayName ?? firebaseUser.email!.split('@')[0],
+          email: firebaseUser.email!,
+          password: 'firebase_auth',
+        );
+        final id = await db.insert('users', newUser.toMap());
+        return UserEntity(
+          id: id,
+          username: newUser.username,
+          email: newUser.email,
+          password: newUser.password,
+        );
       }
     }
     return null;
