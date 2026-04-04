@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'infrastructure_providers.dart';
 
 class CurrencyState {
@@ -78,6 +79,20 @@ class CurrencyNotifier extends Notifier<CurrencyState> {
     if (rate == null) return amount; // Fallback if rate not found
     
     return amount * rate;
+  }
+
+  double convertToBase(double amount, String fromCurrency) {
+    if (state.baseCurrency == fromCurrency) return amount;
+    
+    final rate = state.rates[fromCurrency];
+    if (rate == null || rate == 0) return amount; // Fallback if rate not found
+    
+    return amount / rate;
+  }
+
+  String format(double amount) {
+    final f = NumberFormat.simpleCurrency(name: state.targetCurrency);
+    return f.format(amount);
   }
 }
 

@@ -6,6 +6,7 @@ import '../../../domain/entities/transaction_entity.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../../providers/currency_state_provider.dart';
 import '../../widgets/custom_app_bar.dart';
 
 class TransactionFormScreen extends ConsumerStatefulWidget {
@@ -24,6 +25,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
   late DateTime _selectedDate;
   late TransactionType _type;
   int? _selectedCategoryId;
+  String? _selectedEntryCurrency;
 
   @override
   void initState() {
@@ -56,11 +58,21 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
 
       if (user == null || categoryId == null) return;
 
+      double finalAmount = _amount;
+      if (_selectedEntryCurrency != null) {
+        finalAmount = ref.read(currencyStateProvider.notifier).convertToBase(_amount, _selectedEntryCurrency!);
+      } else {
+        // If they didn't manually pick an override, treat their input as if it's currently the targetCurrency.
+        // E.g., if their target feature shows EUR everywhere, assume they entered the amount in EUR.
+        final targetCurrency = ref.read(currencyStateProvider).targetCurrency;
+        finalAmount = ref.read(currencyStateProvider.notifier).convertToBase(_amount, targetCurrency);
+      }
+
       final newTransaction = TransactionEntity(
         id: widget.transaction?.id,
         userId: user.id!,
         categoryId: categoryId,
-        amount: _amount,
+        amount: finalAmount,
         note: _note,
         date: _selectedDate,
         type: _type,
@@ -104,26 +116,47 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                initialValue: _amount == 0 ? '' : _amount.toString(),
-                decoration: InputDecoration(
-                  labelText: 'Amount',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                  prefixIcon: const Icon(Icons.attach_money),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (val) =>
-                    (val == null || double.tryParse(val) == null)
-                    ? 'Enter valid amount'
-                    : null,
-                onSaved: (val) => _amount = double.parse(val!),
+              Consumer(
+                builder: (context, ref, child) {
+                  final currencyState = ref.watch(currencyStateProvider);
+                  final availableCurrencies = currencyState.rates.keys.toList()..sort();
+                  final currentCurrency = _selectedEntryCurrency ?? currencyState.targetCurrency;
+
+                  return TextFormField(
+                    initialValue: _amount == 0 ? '' : _amount.toString(),
+                    decoration: InputDecoration(
+                      labelText: 'Amount',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.only(left: 12.0, right: 8.0),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: availableCurrencies.contains(currentCurrency) ? currentCurrency : null,
+                            icon: const Icon(Icons.arrow_drop_down, size: 20),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                            items: availableCurrencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                            onChanged: (val) {
+                              setState(() => _selectedEntryCurrency = val);
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    validator: (val) =>
+                        (val == null || double.tryParse(val) == null)
+                        ? 'Enter valid amount'
+                        : null,
+                    onSaved: (val) => _amount = double.parse(val!),
+                  );
+                },
               ),
               const SizedBox(height: 16),
               if (_type == TransactionType.expense) ...[
