@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/infrastructure_providers.dart';
+import '../../providers/currency_state_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/custom_app_bar.dart';
 
@@ -37,6 +38,38 @@ class SettingsScreen extends ConsumerWidget {
                       onChanged: (val) {
                         ref.read(themeModeProvider.notifier).toggleTheme(val);
                       },
+                    );
+                  },
+                ),
+                const Divider(),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final currencyState = ref.watch(currencyStateProvider);
+                    final availableCurrencies = currencyState.rates.keys.toList()..sort();
+                    
+                    return ListTile(
+                      title: const Text('Target Currency'),
+                      subtitle: const Text('View analytics & history in this currency'),
+                      leading: const Icon(Icons.currency_exchange),
+                      trailing: currencyState.isLoading && availableCurrencies.isEmpty
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                          : DropdownButton<String>(
+                              value: availableCurrencies.contains(currencyState.targetCurrency) 
+                                  ? currencyState.targetCurrency 
+                                  : null,
+                              underline: const SizedBox(),
+                              items: availableCurrencies.map((String c) {
+                                return DropdownMenuItem<String>(
+                                  value: c,
+                                  child: Text(c, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  ref.read(currencyStateProvider.notifier).setTargetCurrency(val);
+                                }
+                              },
+                            ),
                     );
                   },
                 ),
