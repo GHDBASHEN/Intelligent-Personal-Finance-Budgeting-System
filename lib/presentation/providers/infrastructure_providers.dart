@@ -4,7 +4,7 @@ import '../../domain/repositories/repositories.dart';
 import '../../data/sources/remote/currency_service.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return FirebaseAuthRepositoryImpl();
+  return AuthRepositoryImpl();
 });
 
 final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
