@@ -72,13 +72,36 @@ class DatabaseHelper {
 
   Future _seedCategories(Database db) async {
     List<Map<String, dynamic>> defaultCategories = [
-      {'name': 'Food', 'icon': 'restaurant', 'color': '0xFFFF5722', 'is_default': 1},
-      {'name': 'Transport', 'icon': 'directions_car', 'color': '0xFF2196F3', 'is_default': 1},
-      {'name': 'Housing', 'icon': 'home', 'color': '0xFF4CAF50', 'is_default': 1},
-      {'name': 'Entertainment', 'icon': 'movie', 'color': '0xFF9C27B0', 'is_default': 1},
-      {'name': 'Shopping', 'icon': 'shopping_bag', 'color': '0xFFE91E63', 'is_default': 1},
-      {'name': 'Salary', 'icon': 'payments', 'color': '0xFF4CAF50', 'is_default': 1},
-      {'name': 'Interest', 'icon': 'account_balance', 'color': '0xFF009688', 'is_default': 1},
+      {
+        'name': 'Food',
+        'icon': 'restaurant',
+        'color': '0xFFFF5722',
+        'is_default': 1,
+      },
+      {
+        'name': 'Transport',
+        'icon': 'directions_car',
+        'color': '0xFF2196F3',
+        'is_default': 1,
+      },
+      {
+        'name': 'Housing',
+        'icon': 'home',
+        'color': '0xFF4CAF50',
+        'is_default': 1,
+      },
+      {
+        'name': 'Entertainment',
+        'icon': 'movie',
+        'color': '0xFF9C27B0',
+        'is_default': 1,
+      },
+      {
+        'name': 'Shopping',
+        'icon': 'shopping_bag',
+        'color': '0xFFE91E63',
+        'is_default': 1,
+      },
     ];
 
     for (var cat in defaultCategories) {

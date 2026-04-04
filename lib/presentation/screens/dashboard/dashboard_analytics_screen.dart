@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../../providers/transaction_provider.dart';
+import '../../providers/currency_state_provider.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../widgets/custom_app_bar.dart';
 
@@ -45,10 +46,10 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
-                  _buildSummaryCards(todayIncome, todayExpense),
+                  _buildSummaryCards(todayIncome, todayExpense, ref.watch(currencyStateProvider)),
                   const SizedBox(height: 32),
                   const Text(
-                    "Today's Expense Trend",
+                    "Today's Trend",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
@@ -117,19 +118,24 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryCards(double income, double expense) {
+  Widget _buildSummaryCards(double income, double expense, CurrencyState cState) {
     return Row(
       children: [
         Expanded(
-          child: _summaryCard("Today's Balance", income - expense, Colors.blue),
+          child: _summaryCard("Today's Balance", income - expense, Colors.blue, cState),
         ),
         const SizedBox(width: 8),
-        Expanded(child: _summaryCard("Today's Expenses", expense, Colors.red)),
+        Expanded(child: _summaryCard("Today's Expenses", expense, Colors.red, cState)),
       ],
     );
   }
 
-  Widget _summaryCard(String title, double amount, Color color) {
+  Widget _summaryCard(String title, double amount, Color color, CurrencyState cState) {
+    final bool showConversion = cState.targetCurrency != cState.baseCurrency;
+    final double converted = showConversion 
+        ? amount * (cState.rates[cState.targetCurrency] ?? 1.0) 
+        : amount;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -145,6 +151,14 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
               '\$${amount.toStringAsFixed(2)}',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
+            if (showConversion)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(
+                  '≈ ${converted.toStringAsFixed(2)} ${cState.targetCurrency}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                ),
+              ),
           ],
         ),
       ),
@@ -153,21 +167,38 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
 
   Widget _buildTodayLineChart(List<TransactionEntity> transactions) {
     final expenses = transactions.where((t) => t.type == TransactionType.expense).toList();
-    // Sort chronologically for line chart
     expenses.sort((a, b) => a.date.compareTo(b.date));
 
-    List<FlSpot> spots = [];
-    double cumulative = 0;
+    final incomes = transactions.where((t) => t.type == TransactionType.income).toList();
+    incomes.sort((a, b) => a.date.compareTo(b.date));
+
+    List<FlSpot> expenseSpots = [];
+    double cumulativeExpense = 0;
     
     if (expenses.isEmpty) {
-      spots = [const FlSpot(0, 0), const FlSpot(24, 0)];
+      expenseSpots = [const FlSpot(0, 0), const FlSpot(24, 0)];
     } else {
       for (var tx in expenses) {
-        cumulative += tx.amount;
-        spots.add(FlSpot(tx.date.hour.toDouble() + (tx.date.minute / 60.0), cumulative));
+        cumulativeExpense += tx.amount;
+        expenseSpots.add(FlSpot(tx.date.hour.toDouble() + (tx.date.minute / 60.0), cumulativeExpense));
       }
-      if (spots.isNotEmpty && spots.first.x > 0) {
-        spots.insert(0, const FlSpot(0, 0));
+      if (expenseSpots.isNotEmpty && expenseSpots.first.x > 0) {
+        expenseSpots.insert(0, const FlSpot(0, 0));
+      }
+    }
+
+    List<FlSpot> incomeSpots = [];
+    double cumulativeIncome = 0;
+
+    if (incomes.isEmpty) {
+      incomeSpots = [const FlSpot(0, 0), const FlSpot(24, 0)];
+    } else {
+      for (var tx in incomes) {
+        cumulativeIncome += tx.amount;
+        incomeSpots.add(FlSpot(tx.date.hour.toDouble() + (tx.date.minute / 60.0), cumulativeIncome));
+      }
+      if (incomeSpots.isNotEmpty && incomeSpots.first.x > 0) {
+        incomeSpots.insert(0, const FlSpot(0, 0));
       }
     }
 
@@ -198,15 +229,27 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
           minY: 0,
           lineBarsData: [
             LineChartBarData(
-              spots: spots,
+              spots: expenseSpots,
               isCurved: true,
-              color: Colors.orangeAccent,
+              color: Colors.red,
               barWidth: 4,
               isStrokeCapRound: true,
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: true,
-                color: Colors.orangeAccent.withOpacity(0.15),
+                color: Colors.red.withOpacity(0.15),
+              ),
+            ),
+            LineChartBarData(
+              spots: incomeSpots,
+              isCurved: true,
+              color: Colors.blue,
+              barWidth: 4,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                color: Colors.blue.withOpacity(0.15),
               ),
             ),
           ],

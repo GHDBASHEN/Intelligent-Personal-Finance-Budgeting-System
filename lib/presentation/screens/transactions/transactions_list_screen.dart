@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../providers/transaction_provider.dart';
+import '../../providers/currency_state_provider.dart';
 import 'transaction_form_screen.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../providers/filter_provider.dart';
@@ -46,6 +47,8 @@ class _TransactionsListScreenState
   Widget build(BuildContext context) {
     final state = ref.watch(transactionProvider);
     final filteredTransactions = ref.watch(filteredTransactionsProvider);
+    final currencyState = ref.watch(currencyStateProvider);
+    final showConversion = currencyState.targetCurrency != currencyState.baseCurrency;
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -113,14 +116,29 @@ class _TransactionsListScreenState
               ),
               title: Text(tx.note.isEmpty ? 'Transaction' : tx.note),
               subtitle: Text(DateFormat.yMMMd().format(tx.date)),
-              trailing: Text(
-                '${tx.type == TransactionType.income ? '+' : '-'} ${tx.amount.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: tx.type == TransactionType.income
-                      ? Colors.green
-                      : Colors.red,
-                ),
+              trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${tx.type == TransactionType.income ? '+' : '-'} \$${tx.amount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: tx.type == TransactionType.income
+                          ? Colors.green
+                          : Colors.red,
+                    ),
+                  ),
+                  if (showConversion)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        '≈ ${(tx.amount * (currencyState.rates[currencyState.targetCurrency] ?? 1.0)).toStringAsFixed(2)} ${currencyState.targetCurrency}',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                ],
               ),
               onLongPress: () => ref
                   .read(transactionProvider.notifier)
