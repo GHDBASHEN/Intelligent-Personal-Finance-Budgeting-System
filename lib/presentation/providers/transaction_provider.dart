@@ -37,8 +37,13 @@ class TransactionNotifier extends Notifier<TransactionState> {
 
   @override
   TransactionState build() {
-    // Initial fetch
-    Future.microtask(() => fetchTransactions());
+    // Watch AuthState carefully: when the user log-in resolves, recreate our state and finally fetch.
+    final authState = ref.watch(authProvider);
+    
+    if (authState.user != null) {
+        Future.microtask(() => fetchTransactions(refresh: true));
+    }
+    
     return TransactionState();
   }
 
