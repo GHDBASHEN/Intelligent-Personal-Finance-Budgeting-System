@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../providers/transaction_provider.dart';
 import 'transaction_form_screen.dart';
+import '../../widgets/custom_app_bar.dart';
+import '../../providers/filter_provider.dart';
+import 'widgets/filter_bottom_sheet.dart';
 
 class TransactionsListScreen extends ConsumerStatefulWidget {
   const TransactionsListScreen({super.key});
@@ -42,15 +45,23 @@ class _TransactionsListScreenState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(transactionProvider);
+    final filteredTransactions = ref.watch(filteredTransactionsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Transactions'),
+      appBar: CustomAppBar(
+        title: 'Transactions',
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: const Icon(Icons.filter_list, color: Colors.white),
             onPressed: () {
-              // TODO: Implement filter dialog
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                builder: (ctx) => const FilterBottomSheet(),
+              );
             },
           ),
         ],
@@ -61,9 +72,25 @@ class _TransactionsListScreenState
             .fetchTransactions(refresh: true),
         child: ListView.builder(
           controller: _scrollController,
-          itemCount: state.transactions.length + (state.hasReachedMax ? 0 : 1),
+          itemCount: filteredTransactions.length + (state.hasReachedMax ? 0 : 1),
           itemBuilder: (context, index) {
-            if (index >= state.transactions.length) {
+            if (index >= filteredTransactions.length) {
+              if (state.transactions.isEmpty && !state.isLoading) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Text('No transactions yet. Start by adding one!', style: TextStyle(fontSize: 16)),
+                  ),
+                );
+              }
+              if (filteredTransactions.isEmpty && state.transactions.isNotEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Text('No transactions match the selected filters.', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                  ),
+                );
+              }
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(8.0),
@@ -71,17 +98,17 @@ class _TransactionsListScreenState
                 ),
               );
             }
-            final tx = state.transactions[index];
+            final tx = filteredTransactions[index];
             return ListTile(
               leading: CircleAvatar(
                 backgroundColor: tx.type == TransactionType.income
-                    ? Colors.green.shade100
-                    : Colors.red.shade100,
+                    ? Colors.greenAccent.withOpacity(0.2)
+                    : Colors.orangeAccent.withOpacity(0.2),
                 child: Icon(
-                  tx.type == TransactionType.income ? Icons.add : Icons.remove,
+                  tx.type == TransactionType.income ? Icons.arrow_downward : Icons.arrow_upward,
                   color: tx.type == TransactionType.income
                       ? Colors.green
-                      : Colors.red,
+                      : Colors.deepOrange,
                 ),
               ),
               title: Text(tx.note.isEmpty ? 'Transaction' : tx.note),

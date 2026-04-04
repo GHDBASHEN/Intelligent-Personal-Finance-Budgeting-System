@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTheme {
@@ -77,14 +78,14 @@ class AppTheme {
         onError: Colors.white,
       ),
       dividerColor: AppColorsLight.dividerGray,
-      textTheme: const TextTheme(
+      textTheme: GoogleFonts.poppinsTextTheme(const TextTheme(
         bodyLarge: TextStyle(color: AppColorsLight.primaryText),
         bodyMedium: TextStyle(color: AppColorsLight.secondaryText),
-        titleLarge: TextStyle(color: AppColorsLight.primaryText),
-        titleMedium: TextStyle(color: AppColorsLight.primaryText),
-        titleSmall: TextStyle(color: AppColorsLight.primaryText),
+        titleLarge: TextStyle(color: AppColorsLight.primaryText, fontWeight: FontWeight.bold),
+        titleMedium: TextStyle(color: AppColorsLight.primaryText, fontWeight: FontWeight.w600),
+        titleSmall: TextStyle(color: AppColorsLight.primaryText, fontWeight: FontWeight.w600),
         labelLarge: TextStyle(color: AppColorsLight.primaryText),
-      ),
+      )),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: AppButtonStyles.primaryButtonLight,
       ),
@@ -92,7 +93,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColorsLight.primaryText,
           side: const BorderSide(color: AppColorsLight.lightBorder),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           backgroundColor: Colors.transparent,
           disabledForegroundColor: AppColorsLight.disabledText,
           disabledBackgroundColor: AppColorsLight.lightBorder,
@@ -105,10 +106,11 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: AppColorsLight.cardBackground,
-        elevation: 0,
+        elevation: 8,
+        shadowColor: Colors.black.withOpacity(0.05),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: AppColorsLight.lightBorder),
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Colors.transparent),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -116,6 +118,12 @@ class AppTheme {
         color: AppColorsLight.dividerGray,
         thickness: 1,
         space: 1,
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: FadeUpwardsPageTransitionsBuilder(),
+        },
       ),
     );
   }
@@ -170,7 +178,7 @@ class AppButtonStyles {
         return Colors.white;
       }),
       elevation: WidgetStateProperty.all(0),
-      shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+      shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
       padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
     );
   }
@@ -187,7 +195,7 @@ class AppButtonStyles {
         return Colors.white;
       }),
       elevation: WidgetStateProperty.all(0),
-      shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+      shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
       padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
     );
   }

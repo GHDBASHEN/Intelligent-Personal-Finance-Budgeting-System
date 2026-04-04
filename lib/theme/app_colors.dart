@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 
 class AppColorsLight {
-  static const Color primaryBlue = Color(0xFF2563EB);
-  static const Color softBlue = Color(0xFFBFDBFE);
-  static const Color secondaryBlue = Color(0xFF3B82F6);
-  static const Color lightBlue = Color(0xFF93C5FD);
-  static const Color mainBackground = Color(0xFFF5F7FA);
-  static const Color cardBackground = Color(0xFFFFFFFF);
-  static const Color secondaryBackground = Color(0xFFF1F3F6);
-  static const Color primaryText = Color(0xFF1A1A1A);
-  static const Color secondaryText = Color(0xFF6B7280);
-  static const Color disabledText = Color(0xFF9CA3AF);
-  static const Color lightBorder = Color(0xFFE5E7EB);
-  static const Color dividerGray = Color(0xFFD1D5DB);
-  static const Color notificationRed = Color(0xFFFF3B30);
-  static const Color primaryButtonHover = Color(0xFF1D4ED8);
-  static const Color secondaryButtonPressed = Color(0xFF1E40AF);
+  static const Color primaryBlue = Color(0xFFFFB300); // Amber/Gold
+  static const Color softBlue = Color(0xFFFFE082);    // Soft yellow
+  static const Color secondaryBlue = Color(0xFFFF9800); // Orange
+  static const Color lightBlue = Color(0xFFFFCC80);   // Light orange
+  static const Color mainBackground = Color(0xFFFDFBF7); // Soft white/cream
+  static const Color cardBackground = Color(0xFFFFFFFF); // Pure white
+  static const Color secondaryBackground = Color(0xFFFFF8E1); // Very light gold
+  static const Color primaryText = Color(0xFF212121); // Dark gray/black
+  static const Color secondaryText = Color(0xFF757575);
+  static const Color disabledText = Color(0xFFBDBDBD);
+  static const Color lightBorder = Color(0xFFEEEEEE); // Very light gray border
+  static const Color dividerGray = Color(0xFFE0E0E0);
+  static const Color notificationRed = Color(0xFFFF5252);
+  static const Color primaryButtonHover = Color(0xFFFFA000); // Darker amber
+  static const Color secondaryButtonPressed = Color(0xFFF57C00); // Darker orange
 }
 
 class AppColorsDark {
