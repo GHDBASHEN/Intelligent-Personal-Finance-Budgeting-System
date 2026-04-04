@@ -39,12 +39,27 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       final user = ref.read(authProvider).user;
-      if (user == null || _selectedCategoryId == null) return;
+      
+      int? categoryId = _selectedCategoryId;
+      if (_type == TransactionType.income) {
+        final categories = ref.read(categoriesProvider).value;
+        if (categories != null && categories.isNotEmpty) {
+          final incomeCategory = categories.firstWhere(
+            (c) => c.name.toLowerCase() == 'salary',
+            orElse: () => categories.first,
+          );
+          categoryId = incomeCategory.id;
+        } else {
+          categoryId = 1; // default index in local DB
+        }
+      }
+
+      if (user == null || categoryId == null) return;
 
       final newTransaction = TransactionEntity(
         id: widget.transaction?.id,
         userId: user.id!,
-        categoryId: _selectedCategoryId!,
+        categoryId: categoryId,
         amount: _amount,
         note: _note,
         date: _selectedDate,
@@ -62,7 +77,9 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
 
     return Scaffold(
       appBar: CustomAppBar(
-        title: widget.transaction == null ? 'Add Transaction' : 'Edit Transaction',
+        title: widget.transaction == null
+            ? 'Add Transaction'
+            : 'Edit Transaction',
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -91,9 +108,14 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                 initialValue: _amount == 0 ? '' : _amount.toString(),
                 decoration: InputDecoration(
                   labelText: 'Amount',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                   filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  fillColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
                   prefixIcon: const Icon(Icons.attach_money),
                 ),
                 keyboardType: TextInputType.number,
@@ -104,28 +126,30 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                 onSaved: (val) => _amount = double.parse(val!),
               ),
               const SizedBox(height: 16),
-              categoriesAsync.when(
-                data: (categories) => DropdownButtonFormField<int>(
-                  initialValue: _selectedCategoryId,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    border: OutlineInputBorder(),
+              if (_type == TransactionType.expense) ...[
+                categoriesAsync.when(
+                  data: (categories) => DropdownButtonFormField<int>(
+                    initialValue: _selectedCategoryId,
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: categories
+                        .map(
+                          (cat) => DropdownMenuItem(
+                            value: cat.id,
+                            child: Text(cat.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (val) => setState(() => _selectedCategoryId = val),
+                    validator: (val) => val == null ? 'Select category' : null,
                   ),
-                  items: categories
-                      .map(
-                        (cat) => DropdownMenuItem(
-                          value: cat.id,
-                          child: Text(cat.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (val) => setState(() => _selectedCategoryId = val),
-                  validator: (val) => val == null ? 'Select category' : null,
+                  loading: () => const CircularProgressIndicator(),
+                  error: (e, s) => Text('Error loading categories: \$e'),
                 ),
-                loading: () => const CircularProgressIndicator(),
-                error: (e, s) => Text('Error loading categories: \$e'),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ],
               ListTile(
                 title: Text(
                   'Date: ${DateFormat.yMMMd().format(_selectedDate)}',
@@ -146,9 +170,14 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                 initialValue: _note,
                 decoration: InputDecoration(
                   labelText: 'Note',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                   filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  fillColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
                   prefixIcon: const Icon(Icons.note),
                 ),
                 onSaved: (val) => _note = val ?? '',
