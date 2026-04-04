@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:go_router/go_router.dart';
 import '../../providers/transaction_provider.dart';
 import '../../../domain/entities/transaction_entity.dart';
+import '../../widgets/custom_app_bar.dart';
 
 class PastDetailsScreen extends ConsumerWidget {
   const PastDetailsScreen({super.key});
@@ -21,13 +21,7 @@ class PastDetailsScreen extends ConsumerWidget {
         .fold(0.0, (sum, t) => sum + t.amount);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text('Past Analytics Details'),
-      ),
+      appBar: const CustomAppBar(title: 'Past Analytics Details'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -88,49 +82,135 @@ class PastDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildPieChart(double income, double expense) {
+    if (income == 0 && expense == 0) {
+      return const Center(child: Text('No data available', style: TextStyle(color: Colors.grey)));
+    }
     return PieChart(
       PieChartData(
+        pieTouchData: PieTouchData(enabled: true),
+        borderData: FlBorderData(show: false),
+        sectionsSpace: 4,
+        centerSpaceRadius: 50,
         sections: [
           PieChartSectionData(
             value: income,
-            color: Colors.green,
+            color: Colors.teal.shade300,
             title: 'Income',
             radius: 50,
-            titleStyle: const TextStyle(color: Colors.white),
+            titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+            badgeWidget: _buildBadge(Icons.arrow_downward, Colors.teal),
+            badgePositionPercentageOffset: .98,
           ),
           PieChartSectionData(
             value: expense,
-            color: Colors.red,
+            color: Colors.orange.shade400,
             title: 'Expense',
             radius: 50,
-            titleStyle: const TextStyle(color: Colors.white),
+            titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+            badgeWidget: _buildBadge(Icons.arrow_upward, Colors.orange),
+            badgePositionPercentageOffset: .98,
           ),
         ],
       ),
+      duration: const Duration(milliseconds: 1000),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  Widget _buildBadge(IconData icon, Color color) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(30), blurRadius: 6, offset: const Offset(0, 3)),
+        ],
+      ),
+      padding: const EdgeInsets.all(6),
+      child: Icon(icon, color: color, size: 16),
     );
   }
 
   Widget _buildBarChart(List<TransactionEntity> transactions) {
     return SizedBox(
-      height: 200,
+      height: 240,
       child: BarChart(
         BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          borderData: FlBorderData(show: false),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: 10,
+            getDrawingHorizontalLine: (value) => FlLine(
+              color: Colors.grey.withAlpha(40),
+              strokeWidth: 1,
+            ),
+          ),
+          titlesData: FlTitlesData(
+            show: true,
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 32,
+                getTitlesWidget: (value, meta) => Text(
+                  value.toInt().toString(),
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  textAlign: TextAlign.right,
+                ),
+              ),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  const labels = ['Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
+                  if (value.toInt() >= 0 && value.toInt() < labels.length) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        labels[value.toInt()],
+                        style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600, fontSize: 12),
+                      ),
+                    );
+                  }
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
           barGroups: [
-            BarChartGroupData(
-              x: 1,
-              barRods: [BarChartRodData(toY: 5, color: Colors.blue)],
-            ),
-            BarChartGroupData(
-              x: 2,
-              barRods: [BarChartRodData(toY: 8, color: Colors.blue)],
-            ),
-            BarChartGroupData(
-              x: 3,
-              barRods: [BarChartRodData(toY: 3, color: Colors.blue)],
-            ),
+            _buildModernBarGroup(0, 15, Colors.amber.shade400),
+            _buildModernBarGroup(1, 25, Colors.orange.shade400),
+            _buildModernBarGroup(2, 10, Colors.teal.shade300),
+            _buildModernBarGroup(3, 30, Colors.redAccent.shade200),
+            _buildModernBarGroup(4, 20, Colors.orange.shade400),
           ],
         ),
+        duration: const Duration(milliseconds: 1000),
+        curve: Curves.easeOutCubic,
       ),
+    );
+  }
+
+  BarChartGroupData _buildModernBarGroup(int x, double y, Color color) {
+    return BarChartGroupData(
+      x: x,
+      barRods: [
+        BarChartRodData(
+          toY: y,
+          width: 22,
+          color: color,
+          borderRadius: BorderRadius.circular(6),
+          backDrawRodData: BackgroundBarChartRodData(
+            show: true,
+            toY: 35,
+            color: Colors.grey.withAlpha(20),
+          ),
+        ),
+      ],
     );
   }
 }

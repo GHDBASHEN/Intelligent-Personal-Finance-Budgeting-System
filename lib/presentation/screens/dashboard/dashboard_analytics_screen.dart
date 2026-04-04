@@ -5,6 +5,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../../providers/transaction_provider.dart';
 import '../../../domain/entities/transaction_entity.dart';
+import '../../widgets/custom_app_bar.dart';
 
 class DashboardAnalyticsScreen extends ConsumerWidget {
   const DashboardAnalyticsScreen({super.key});
@@ -30,69 +31,77 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
         .fold(0.0, (sum, t) => sum + t.amount);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Today's Dashboard")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Daily Summary',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildSummaryCards(todayIncome, todayExpense),
-            const SizedBox(height: 32),
-            const Text(
-              "Today's Expense Trend",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildTodayLineChart(todayTransactions),
-            const SizedBox(height: 32),
-            const Text(
-              "Today's Activity",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            if (todayTransactions.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: Text('No transactions yet today.'),
-                ),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: todayTransactions.length,
-                itemBuilder: (context, index) {
-                  final tx = todayTransactions[index];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: tx.type == TransactionType.income 
-                          ? Colors.green.withOpacity(0.2) 
-                          : Colors.red.withOpacity(0.2),
-                      child: Icon(
-                        tx.type == TransactionType.income ? Icons.arrow_downward : Icons.arrow_upward,
-                        color: tx.type == TransactionType.income ? Colors.green : Colors.red,
+      appBar: const CustomAppBar(title: "Today's Overview"),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Daily Summary',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSummaryCards(todayIncome, todayExpense),
+                  const SizedBox(height: 32),
+                  const Text(
+                    "Today's Expense Trend",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTodayLineChart(todayTransactions),
+                  const SizedBox(height: 32),
+                  const Text(
+                    "Today's Activity",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  if (todayTransactions.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Text('No transactions yet today.'),
                       ),
+                    )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: todayTransactions.length,
+                      itemBuilder: (context, index) {
+                        final tx = todayTransactions[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: tx.type == TransactionType.income 
+                                ? Colors.green.withOpacity(0.2) 
+                                : Colors.red.withOpacity(0.2),
+                            child: Icon(
+                              tx.type == TransactionType.income ? Icons.arrow_downward : Icons.arrow_upward,
+                              color: tx.type == TransactionType.income ? Colors.green : Colors.red,
+                            ),
+                          ),
+                          title: Text(tx.note),
+                          subtitle: Text(DateFormat.jm().format(tx.date)),
+                          trailing: Text(
+                            '\$${tx.amount.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: tx.type == TransactionType.income ? Colors.green : Colors.red,
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    title: Text(tx.note),
-                    subtitle: Text(DateFormat.jm().format(tx.date)),
-                    trailing: Text(
-                      '\$${tx.amount.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: tx.type == TransactionType.income ? Colors.green : Colors.red,
-                      ),
-                    ),
-                  );
-                },
+                ],
               ),
-            const SizedBox(height: 32),
-            SizedBox(
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
@@ -102,8 +111,8 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
                 label: const Text('View past data with details'),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -122,20 +131,19 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
 
   Widget _summaryCard(String title, double amount, Color color) {
     return Card(
-      elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
             Text(
               title,
-              style: TextStyle(color: color, fontWeight: FontWeight.bold),
+              style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 14),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               '\$${amount.toStringAsFixed(2)}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -192,13 +200,13 @@ class DashboardAnalyticsScreen extends ConsumerWidget {
             LineChartBarData(
               spots: spots,
               isCurved: true,
-              color: Colors.redAccent,
-              barWidth: 3,
+              color: Colors.orangeAccent,
+              barWidth: 4,
               isStrokeCapRound: true,
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: true,
-                color: Colors.redAccent.withOpacity(0.2),
+                color: Colors.orangeAccent.withOpacity(0.15),
               ),
             ),
           ],

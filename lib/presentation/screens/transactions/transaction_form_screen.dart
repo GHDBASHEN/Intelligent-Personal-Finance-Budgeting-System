@@ -6,6 +6,7 @@ import '../../../domain/entities/transaction_entity.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../../widgets/custom_app_bar.dart';
 
 class TransactionFormScreen extends ConsumerStatefulWidget {
   final TransactionEntity? transaction;
@@ -60,10 +61,8 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
     final categoriesAsync = ref.watch(categoriesProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.transaction == null ? 'Add Transaction' : 'Edit Transaction',
-        ),
+      appBar: CustomAppBar(
+        title: widget.transaction == null ? 'Add Transaction' : 'Edit Transaction',
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -90,9 +89,12 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 initialValue: _amount == 0 ? '' : _amount.toString(),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Amount',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  prefixIcon: const Icon(Icons.attach_money),
                 ),
                 keyboardType: TextInputType.number,
                 validator: (val) =>
@@ -142,9 +144,12 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 initialValue: _note,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Note',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  prefixIcon: const Icon(Icons.note),
                 ),
                 onSaved: (val) => _note = val ?? '',
               ),

@@ -8,6 +8,7 @@ import '../../providers/transaction_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/infrastructure_providers.dart';
 import '../../providers/theme_provider.dart';
+import '../../widgets/custom_app_bar.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -18,55 +19,57 @@ class SettingsScreen extends ConsumerWidget {
     final transactions = ref.watch(transactionProvider).transactions;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: const CustomAppBar(title: 'Settings'),
       body: ListView(
+        padding: const EdgeInsets.all(16.0),
         children: [
-          Consumer(
-            builder: (context, ref, child) {
-              final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
-              return SwitchListTile(
-                title: const Text('Dark Mode'),
-                secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
-                value: isDarkMode,
-                onChanged: (val) {
-                  ref.read(themeModeProvider.notifier).toggleTheme(val);
-                },
-              );
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.currency_exchange),
-            title: const Text('Exchange Rates (Mock)'),
-            subtitle: FutureBuilder<Map<String, dynamic>>(
-              future: currencyService.getExchangeRates('USD'),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Text('Loading...');
-                }
-                if (snapshot.hasError) return const Text('Error loading rates');
-                final rates = snapshot.data?['rates'] as Map<String, dynamic>?;
-                return Text('1 USD = ${(rates?['LKR'] ?? 'N/A')} LKR');
-              },
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Column(
+              children: [
+                Consumer(
+                  builder: (context, ref, child) {
+                    final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
+                    return SwitchListTile(
+                      title: const Text('Dark Mode'),
+                      secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
+                      value: isDarkMode,
+                      onChanged: (val) {
+                        ref.read(themeModeProvider.notifier).toggleTheme(val);
+                      },
+                    );
+                  },
+                ),
+              ],
             ),
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.file_download),
-            title: const Text('Export financial summary (CSV)'),
-            onTap: () => _exportToCSV(context, transactions),
+          const SizedBox(height: 16),
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.file_download, color: Colors.orangeAccent),
+                  title: const Text('Export financial summary (CSV)'),
+                  onTap: () => _exportToCSV(context, transactions),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt, color: Colors.orangeAccent),
+                  title: const Text('Scan Receipt (Camera)'),
+                  onTap: () => context.push('/receipt-scan'),
+                ),
+              ],
+            ),
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.camera_alt),
-            title: const Text('Scan Receipt (Camera)'),
-            onTap: () => context.push('/receipt-scan'),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Logout', style: TextStyle(color: Colors.red)),
-            onTap: () => ref.read(authProvider.notifier).logout(),
+          const SizedBox(height: 16),
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Logout', style: TextStyle(color: Colors.red)),
+              onTap: () => ref.read(authProvider.notifier).logout(),
+            ),
           ),
         ],
       ),
