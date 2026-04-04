@@ -234,7 +234,8 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<UserEntity?> getCurrentUser() async {
-    final firebaseUser = _firebaseAuth.currentUser;
+    // Wait for the first emitted state to guarantee Firebase has restored the native session
+    final firebaseUser = await _firebaseAuth.authStateChanges().first;
     if (firebaseUser != null && firebaseUser.email != null) {
       final db = await _dbHelper.database;
       final List<Map<String, dynamic>> maps = await db.query(
