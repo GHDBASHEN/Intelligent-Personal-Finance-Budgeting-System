@@ -15,7 +15,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/login',
     redirect: (context, state) {
       final isLoggedIn = authState.user != null;
-      final isAuthPath = state.uri.path == '/login' || state.uri.path == '/register';
+      final isAuthPath = state.uri.path == '/login' || state.uri.path == '/register' || state.uri.path == '/forgot-password';
 
       if (!isLoggedIn && !isAuthPath) return '/login';
       if (isLoggedIn && isAuthPath) return '/dashboard';
@@ -24,6 +24,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
+      GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
       ShellRoute(
         builder: (context, state, child) => MainLayout(child: child),
         routes: [
