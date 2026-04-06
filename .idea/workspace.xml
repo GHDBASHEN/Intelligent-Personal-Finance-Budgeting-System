@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="269157de-3343-46d3-836e-f225b75c0dec" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/lib/data/repositories/repository_impls.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/data/repositories/repository_impls.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -31,6 +31,9 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$USER_HOME$/AppData/Local/Google/AndroidStudio2024.2/device-explorer/Pixel 9 Pro API 35/_/data/data/com.fintech.finance.finance_system/databases/finance_system.db" root0="SKIP_INSPECTION" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
 }</component>
@@ -55,7 +58,7 @@
     &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;ashen&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;ashen-test2&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/GHDB Ashen/Desktop&quot;,
     &quot;project.structure.last.edited&quot;: &quot;Libraries&quot;,
