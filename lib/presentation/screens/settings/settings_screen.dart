@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:csv/csv.dart';
-import 'package:go_router/go_router.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/infrastructure_providers.dart';
@@ -85,12 +84,6 @@ class SettingsScreen extends ConsumerWidget {
                   leading: const Icon(Icons.file_download, color: Colors.orangeAccent),
                   title: const Text('Export financial summary (CSV)'),
                   onTap: () => _exportToCSV(context, transactions),
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.camera_alt, color: Colors.orangeAccent),
-                  title: const Text('Scan Receipt (Camera)'),
-                  onTap: () => context.push('/receipt-scan'),
                 ),
               ],
             ),

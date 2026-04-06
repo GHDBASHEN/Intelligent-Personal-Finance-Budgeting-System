@@ -4,9 +4,11 @@ import '../../domain/entities/transaction_entity.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/repositories/repositories.dart';
 import '../sources/local/database_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  static const String _userKey = 'loggedInUserId';
 
   @override
   Future<UserEntity?> login(String email, String password) async {
@@ -17,7 +19,10 @@ class AuthRepositoryImpl implements AuthRepository {
       whereArgs: [email, password],
     );
     if (maps.isNotEmpty) {
-      return UserEntity.fromMap(maps.first);
+      final user = UserEntity.fromMap(maps.first);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_userKey, user.id!);
+      return user;
     }
     return null;
   }
@@ -26,22 +31,40 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<UserEntity> register(UserEntity user) async {
     final db = await _dbHelper.database;
     final id = await db.insert('users', user.toMap());
-    return UserEntity(
+    final newUser = UserEntity(
       id: id,
       username: user.username,
       email: user.email,
       password: user.password,
     );
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_userKey, id);
+    return newUser;
   }
 
   @override
   Future<void> logout() async {
-    // Session management would go here
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userKey);
   }
 
   @override
   Future<UserEntity?> getCurrentUser() async {
-    // Mocking current user for simplicity in this exercise
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt(_userKey);
+    if (userId != null) {
+      final db = await _dbHelper.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'users',
+        where: 'id = ?',
+        whereArgs: [userId],
+      );
+      if (maps.isNotEmpty) {
+        return UserEntity.fromMap(maps.first);
+      } else {
+        await prefs.remove(_userKey); // Clear invalid session
+      }
+    }
     return null;
   }
 }

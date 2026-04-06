@@ -1,0 +1,26 @@
+﻿Analyzing Intelligent-Personal-Finance-Budgeting-System...      
+
+warning - The value of the field '_baseUrl' isn't used - lib\data\sources\remote\currency_service.dart:6:23 - unused_field
+   info - Don't invoke 'print' in production code - lib\find_pkg.dart:5:3 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\auth\auth_screens.dart:40:90 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\auth\auth_screens.dart:50:90 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\auth\auth_screens.dart:116:90 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\auth\auth_screens.dart:126:90 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\auth\auth_screens.dart:136:90 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\dashboard\dashboard_analytics_screen.dart:80:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\dashboard\dashboard_analytics_screen.dart:81:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\dashboard\dashboard_analytics_screen.dart:232:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\dashboard\dashboard_analytics_screen.dart:244:36 - deprecated_member_use
+warning - The value of the local variable 'image' isn't used - lib\presentation\screens\settings\receipt_scan_screen.dart:48:17 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps - lib\presentation\screens\settings\receipt_scan_screen.dart:50:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\presentation\screens\settings\receipt_scan_screen.dart:53:25 - use_build_context_synchronously
+warning - The value of the local variable 'currencyService' isn't used - lib\presentation\screens\settings\settings_screen.dart:19:11 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps - lib\presentation\screens\settings\settings_screen.dart:128:7 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\transactions\transaction_form_screen.dart:150:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\transactions\transaction_form_screen.dart:227:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\transactions\transactions_list_screen.dart:107:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\transactions\transactions_list_screen.dart:108:43 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\reproduce_error.dart:13:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\test_csv.dart:5:3 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\theme\app_theme.dart:110:35 - deprecated_member_use
+
