@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
@@ -8,13 +9,26 @@ import '../screens/dashboard/past_details_screen.dart';
 import '../screens/transactions/transactions_list_screen.dart';
 import '../screens/settings/settings_screen.dart';
 
+// This class will notify GoRouter only when the login state changes
+class RouterNotifier extends ChangeNotifier {
+  final Ref _ref;
+
+  RouterNotifier(this._ref) {
+    _ref.listen(
+      authProvider.select((state) => state.user != null),
+      (_, __) => notifyListeners(),
+    );
+  }
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final notifier = RouterNotifier(ref);
 
   return GoRouter(
     initialLocation: '/login',
+    refreshListenable: notifier,
     redirect: (context, state) {
-      final isLoggedIn = authState.user != null;
+      final isLoggedIn = ref.read(authProvider).user != null;
       final isAuthPath = state.uri.path == '/login' || state.uri.path == '/register' || state.uri.path == '/forgot-password';
 
       if (!isLoggedIn && !isAuthPath) return '/login';
