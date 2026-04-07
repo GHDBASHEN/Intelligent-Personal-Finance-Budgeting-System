@@ -71,6 +71,40 @@ class AuthNotifier extends Notifier<AuthState> {
     await ref.read(authRepositoryProvider).logout();
     state = AuthState();
   }
+
+  Future<void> forgotPassword(String email) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await ref.read(authRepositoryProvider).forgotPassword(email);
+      state = state.copyWith(isLoading: false, error: null);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<bool> checkEmailExists(String email) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final exists = await ref.read(authRepositoryProvider).checkEmailExists(email);
+      state = state.copyWith(isLoading: false);
+      return exists;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<void> updatePassword(String email, String newPassword) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await ref.read(authRepositoryProvider).updatePassword(email, newPassword);
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
 }
 
 final authProvider = NotifierProvider<AuthNotifier, AuthState>(

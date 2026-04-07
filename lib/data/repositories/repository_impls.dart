@@ -67,6 +67,33 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     return null;
   }
+
+  @override
+  Future<void> forgotPassword(String email) async {
+    throw Exception('Password reset is not supported for local authentication');
+  }
+
+  @override
+  Future<bool> checkEmailExists(String email) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'users',
+      where: 'email = ?',
+      whereArgs: [email],
+    );
+    return maps.isNotEmpty;
+  }
+
+  @override
+  Future<void> updatePassword(String email, String newPassword) async {
+    final db = await _dbHelper.database;
+    await db.update(
+      'users',
+      {'password': newPassword},
+      where: 'email = ?',
+      whereArgs: [email],
+    );
+  }
 }
 
 class TransactionRepositoryImpl implements TransactionRepository {
@@ -285,5 +312,45 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       }
     }
     return null;
+  }
+
+  @override
+  Future<void> forgotPassword(String email) async {
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw Exception(e.message ?? 'Failed to send password reset email');
+    } catch (e) {
+      throw Exception('An error occurred. Please try again.');
+    }
+  }
+
+  @override
+  Future<bool> checkEmailExists(String email) async {
+    // Note: fetchSignInMethodsForEmail is removed in newer firebase_auth versions
+    // for security. We check the local synced database instead.
+    final db = await _dbHelper.database;
+    final maps = await db.query('users', where: 'email = ?', whereArgs: [email]);
+    return maps.isNotEmpty;
+  }
+
+  @override
+  Future<void> updatePassword(String email, String newPassword) async {
+    // Note: To update the password in Firebase without being logged in, 
+    // a backend using Firebase Admin SDK is usually required.
+    // However, if we're also maintaining a local database, we update it there.
+    final db = await _dbHelper.database;
+    await db.update(
+      'users',
+      {'password': newPassword},
+      where: 'email = ?',
+      whereArgs: [email],
+    );
+    
+    // Attempting a direct Firebase Auth update usually fails without an active user session.
+    // If the user happens to be logged in (which is not common for forgot password screens):
+    if (_firebaseAuth.currentUser != null && _firebaseAuth.currentUser!.email == email) {
+      await _firebaseAuth.currentUser!.updatePassword(newPassword);
+    }
   }
 }

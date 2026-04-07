@@ -7,6 +7,9 @@ abstract class AuthRepository {
   Future<UserEntity> register(UserEntity user);
   Future<void> logout();
   Future<UserEntity?> getCurrentUser();
+  Future<void> forgotPassword(String email);
+  Future<bool> checkEmailExists(String email);
+  Future<void> updatePassword(String email, String newPassword);
 }
 
 abstract class TransactionRepository {

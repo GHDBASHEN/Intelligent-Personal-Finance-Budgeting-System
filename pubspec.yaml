@@ -56,6 +56,8 @@ dependencies:
   google_fonts: ^8.0.2
   mobile_scanner: ^7.2.0
   shared_preferences: ^2.5.5
+  pinput: ^6.0.2
+  email_otp: ^3.1.0
 
 dev_dependencies:
   flutter_test:
