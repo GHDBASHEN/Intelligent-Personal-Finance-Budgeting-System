@@ -104,8 +104,8 @@ class _TransactionsListScreenState
             return ListTile(
               leading: CircleAvatar(
                 backgroundColor: tx.type == TransactionType.income
-                    ? Colors.greenAccent.withOpacity(0.2)
-                    : Colors.orangeAccent.withOpacity(0.2),
+                    ? Colors.greenAccent.withAlpha(51)
+                    : Colors.orangeAccent.withAlpha(51),
                 child: Icon(
                   tx.type == TransactionType.income ? Icons.arrow_downward : Icons.arrow_upward,
                   color: tx.type == TransactionType.income
