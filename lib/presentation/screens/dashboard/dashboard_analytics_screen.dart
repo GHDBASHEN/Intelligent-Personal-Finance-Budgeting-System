@@ -13,11 +13,13 @@ class DashboardAnalyticsScreen extends ConsumerStatefulWidget {
   const DashboardAnalyticsScreen({super.key});
 
   @override
-  ConsumerState<DashboardAnalyticsScreen> createState() => _DashboardAnalyticsScreenState();
+  ConsumerState<DashboardAnalyticsScreen> createState() =>
+      _DashboardAnalyticsScreenState();
 }
 
-class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScreen> {
-  String selectedPeriod = 'This Month';
+class _DashboardAnalyticsScreenState
+    extends ConsumerState<DashboardAnalyticsScreen> {
+  String selectedPeriod = 'Month';
   bool _initialized = false;
 
   @override
@@ -34,22 +36,28 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
     setState(() {
       selectedPeriod = period;
     });
-    
+
     final now = DateTime.now();
     DateTime? start;
     DateTime? end = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    if (period == 'This Week') {
-      start = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
-    } else if (period == 'This Month') {
+    if (period == 'Day') {
+      start = DateTime(now.year, now.month, now.day);
+    } else if (period == 'Week') {
+      start = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: now.weekday - 1));
+    } else if (period == 'Month') {
       start = DateTime(now.year, now.month, 1);
-    } else if (period == 'This Year') {
+    } else if (period == 'Year') {
       start = DateTime(now.year, 1, 1);
     } else {
       start = null; // All Time
       end = null;
     }
-    
+
     ref.read(filterProvider.notifier).setDateRange(start, end);
   }
 
@@ -62,14 +70,19 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
     return Scaffold(
       appBar: const CustomAppBar(title: "Analytics Dashboard"),
       body: categoriesAsync.when(
-        data: (categories) => _buildContent(filteredTransactions, categories, currencyNotifier),
+        data: (categories) =>
+            _buildContent(filteredTransactions, categories, currencyNotifier),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );
   }
 
-  Widget _buildContent(List<TransactionEntity> transactions, List<CategoryEntity> categories, dynamic currencyNotifier) {
+  Widget _buildContent(
+    List<TransactionEntity> transactions,
+    List<CategoryEntity> categories,
+    dynamic currencyNotifier,
+  ) {
     final income = transactions
         .where((t) => t.type == TransactionType.income)
         .fold(0.0, (sum, t) => sum + t.amount);
@@ -79,8 +92,11 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
 
     // Group expenses by category
     final categoryTotals = <int, double>{};
-    for (var tx in transactions.where((t) => t.type == TransactionType.expense)) {
-      categoryTotals[tx.categoryId] = (categoryTotals[tx.categoryId] ?? 0) + tx.amount;
+    for (var tx in transactions.where(
+      (t) => t.type == TransactionType.expense,
+    )) {
+      categoryTotals[tx.categoryId] =
+          (categoryTotals[tx.categoryId] ?? 0) + tx.amount;
     }
 
     // Find highest category
@@ -90,8 +106,11 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
       final sortedKeys = categoryTotals.keys.toList()
         ..sort((a, b) => categoryTotals[b]!.compareTo(categoryTotals[a]!));
       final topCatId = sortedKeys.first;
-      final category = categories.firstWhere((c) => c.id == topCatId, 
-         orElse: () => CategoryEntity(name: "Unknown", icon: "", color: "0xFF808080"));
+      final category = categories.firstWhere(
+        (c) => c.id == topCatId,
+        orElse: () =>
+            CategoryEntity(name: "Unknown", icon: "", color: "0xFF808080"),
+      );
       highestCategoryName = category.name;
       highestAmount = categoryTotals[topCatId]!;
     }
@@ -103,7 +122,13 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
         children: [
           _buildPeriodSelector(),
           const SizedBox(height: 24),
-          _buildSummarySection(income, expense, highestCategoryName, highestAmount, currencyNotifier),
+          _buildSummarySection(
+            income,
+            expense,
+            highestCategoryName,
+            highestAmount,
+            currencyNotifier,
+          ),
           const SizedBox(height: 32),
           const Text(
             "Expense Breakdown",
@@ -140,7 +165,7 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
         ],
       ),
       child: Row(
-        children: ['This Week', 'This Month', 'This Year', 'All Time'].map((period) {
+        children: ['Day', 'Week', 'Month', 'Year', 'All Time'].map((period) {
           final isSelected = selectedPeriod == period;
           return Expanded(
             child: GestureDetector(
@@ -149,15 +174,19 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
                 duration: const Duration(milliseconds: 300),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
+                  color: isSelected
+                      ? Theme.of(context).primaryColor
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(25),
                 ),
                 child: Text(
                   period,
                   style: TextStyle(
                     color: isSelected ? Colors.white : Colors.grey,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 11,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    fontSize: 10,
                   ),
                 ),
               ),
@@ -168,28 +197,70 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
     );
   }
 
-  Widget _buildSummarySection(double income, double expense, String highestCategory, double highestAmount, dynamic currencyNotifier) {
+  Widget _buildSummarySection(
+    double income,
+    double expense,
+    String highestCategory,
+    double highestAmount,
+    dynamic currencyNotifier,
+  ) {
+    final balance = income - expense;
+
     return Column(
       children: [
         Row(
           children: [
-            Expanded(child: _summaryCard("Income", income, Colors.green, currencyNotifier, Icons.arrow_downward)),
+            Expanded(
+              child: _summaryCard(
+                "Total Income",
+                income,
+                const Color.fromARGB(255, 67, 128, 234),
+                currencyNotifier,
+                Icons.account_balance_wallet,
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _summaryCard("Expenses", expense, Colors.red, currencyNotifier, Icons.arrow_upward)),
+            Expanded(
+              child: _summaryCard(
+                "Total Spending",
+                expense,
+                Colors.redAccent,
+                currencyNotifier,
+                Icons.shopping_cart,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _summaryCard("Savings", income - expense, Colors.blue, currencyNotifier, Icons.account_balance_wallet)),
+            Expanded(
+              child: _summaryCard(
+                "Budget Balance",
+                balance,
+                balance >= 0 ? Colors.green : Colors.orangeAccent,
+                currencyNotifier,
+                Icons.account_balance,
+              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Card(
                 elevation: 4,
                 shadowColor: Colors.black12,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                child: Padding(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Container(
                   padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Colors.white, Colors.amber.withAlpha(20)],
+                    ),
+                  ),
                   child: Column(
                     children: [
                       Row(
@@ -197,18 +268,35 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
                         children: [
                           const Icon(Icons.star, size: 14, color: Colors.amber),
                           const SizedBox(width: 4),
-                          const Text("Top Cat", style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                          const Text(
+                            "Top Spending",
+                            style: TextStyle(
+                              color: Colors.amber,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        highestCategory, 
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        highestCategory,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 8,
+                          color: Color.fromARGB(221, 57, 24, 24),
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        currencyNotifier.format(currencyNotifier.convert(highestAmount)),
-                        style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12),
+                        currencyNotifier.format(
+                          currencyNotifier.convert(highestAmount),
+                        ),
+                        style: const TextStyle(
+                          color: Color.fromARGB(255, 171, 69, 69),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
                       ),
                     ],
                   ),
@@ -221,7 +309,13 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
     );
   }
 
-  Widget _summaryCard(String title, double amount, Color color, dynamic currencyNotifier, IconData icon) {
+  Widget _summaryCard(
+    String title,
+    double amount,
+    Color color,
+    dynamic currencyNotifier,
+    IconData icon,
+  ) {
     return Card(
       elevation: 4,
       shadowColor: color.withOpacity(0.2),
@@ -233,10 +327,7 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.white,
-              color.withAlpha(12),
-            ],
+            colors: [Colors.white, color.withAlpha(12)],
           ),
         ),
         child: Column(
@@ -246,14 +337,24 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
               children: [
                 Icon(icon, size: 14, color: color),
                 const SizedBox(width: 4),
-                Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11)),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
             FittedBox(
               child: Text(
                 currencyNotifier.format(currencyNotifier.convert(amount)),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],
@@ -262,16 +363,41 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
     );
   }
 
-  Widget _buildPieChart(Map<int, double> categoryTotals, List<CategoryEntity> categories) {
+  Widget _buildPieChart(
+    Map<int, double> categoryTotals,
+    List<CategoryEntity> categories,
+  ) {
     if (categoryTotals.isEmpty) {
       return Container(
         height: 200,
         alignment: Alignment.center,
-        child: const Text("No expenses to chart", style: TextStyle(color: Colors.grey)),
+        child: const Text(
+          "No expenses to chart",
+          style: TextStyle(color: Colors.grey),
+        ),
       );
     }
 
     final totalExpense = categoryTotals.values.fold(0.0, (a, b) => a + b);
+
+    // Prepare legend data
+    final legendItems = categoryTotals.entries.map((e) {
+      final category = categories.firstWhere(
+        (c) => c.id == e.key,
+        orElse: () =>
+            CategoryEntity(name: "Unknown", icon: "", color: "0xFF808080"),
+      );
+      final color = Color(
+        int.parse(category.color.replaceFirst('0x', ''), radix: 16),
+      );
+      final percentage = (e.value / totalExpense * 100).toStringAsFixed(0);
+      return {
+        'name': category.name,
+        'color': color,
+        'amount': e.value,
+        'percentage': percentage,
+      };
+    }).toList();
 
     return Container(
       height: 250,
@@ -280,42 +406,113 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 10, offset: const Offset(0, 5))
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
         ],
       ),
-      child: Stack(
-        alignment: Alignment.center,
+      child: Row(
         children: [
-          PieChart(
-            PieChartData(
-              sectionsSpace: 3,
-              centerSpaceRadius: 50,
-              sections: categoryTotals.entries.map((e) {
-                final category = categories.firstWhere((c) => c.id == e.key,
-                    orElse: () => CategoryEntity(name: "Unknown", icon: "", color: "0xFF808080"));
-                final color = Color(int.parse(category.color.replaceFirst('0x', ''), radix: 16));
-                
-                return PieChartSectionData(
-                  value: e.value,
-                  title: '${(e.value / totalExpense * 100).toStringAsFixed(0)}%',
-                  color: color,
-                  radius: 40,
-                  titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-                );
-              }).toList(),
+          Expanded(
+            flex: 3,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                PieChart(
+                  PieChartData(
+                    sectionsSpace: 3,
+                    centerSpaceRadius: 40,
+                    sections: categoryTotals.entries.map((e) {
+                      final category = categories.firstWhere(
+                        (c) => c.id == e.key,
+                        orElse: () => CategoryEntity(
+                          name: "Unknown",
+                          icon: "",
+                          color: "0xFF808080",
+                        ),
+                      );
+                      final color = Color(
+                        int.parse(
+                          category.color.replaceFirst('0x', ''),
+                          radix: 16,
+                        ),
+                      );
+
+                      return PieChartSectionData(
+                        value: e.value,
+                        title: '',
+                        color: color,
+                        radius: 35,
+                      );
+                    }).toList(),
+                  ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "TOTAL",
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    FittedBox(
+                      child: Text(
+                        totalExpense.toStringAsFixed(0),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("TOTAL", style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
-              FittedBox(
-                child: Text(
-                  totalExpense.toStringAsFixed(0),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 2,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: legendItems.map((item) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: item['color'] as Color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            "${item['name']} (${item['percentage']}%)",
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -323,22 +520,103 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
   }
 
   Widget _buildTrendBarChart(List<TransactionEntity> transactions) {
-     if (transactions.isEmpty) {
-       return Container(
-         height: 100,
-         alignment: Alignment.center,
-         child: const Text("No transaction trend available", style: TextStyle(color: Colors.grey)),
-       );
-     }
+    if (transactions.isEmpty) {
+      return Container(
+        height: 100,
+        alignment: Alignment.center,
+        child: const Text(
+          "No transaction trend available",
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    final Map<String, double> dailyExpenses = {};
+    final Map<String, double> dailyIncome = {};
+
+    // Grouping logic based on period
+    String dateFormat;
+    if (selectedPeriod == 'Day') {
+      dateFormat = 'HH:00';
+    } else if (selectedPeriod == 'Week') {
+      dateFormat = 'EEE';
+    } else if (selectedPeriod == 'Year' || selectedPeriod == 'All Time') {
+      dateFormat = 'MMM';
+    } else {
+      dateFormat = 'MM/dd';
+    }
+
+    for (var tx in transactions) {
+      final dateStr = DateFormat(dateFormat).format(tx.date);
+      if (tx.type == TransactionType.expense) {
+        dailyExpenses[dateStr] = (dailyExpenses[dateStr] ?? 0) + tx.amount;
+      } else {
+        dailyIncome[dateStr] = (dailyIncome[dateStr] ?? 0) + tx.amount;
+      }
+    }
+
+    // Determine all unique date labels and sort them
+    final allDates = {...dailyExpenses.keys, ...dailyIncome.keys}.toList();
     
+    // Custom sort for labels to be chronological
+    if (selectedPeriod == 'Week') {
+      final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      allDates.sort((a, b) => weekdays.indexOf(a).compareTo(weekdays.indexOf(b)));
+    } else if (selectedPeriod == 'Year' || selectedPeriod == 'All Time') {
+       final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+       allDates.sort((a, b) => months.indexOf(a).compareTo(months.indexOf(b)));
+    } else {
+      allDates.sort();
+    }
+
+    double maxVal = 0;
+    List<BarChartGroupData> barGroups = [];
+
+    for (int i = 0; i < allDates.length; i++) {
+      final label = allDates[i];
+      final inc = dailyIncome[label] ?? 0;
+      final exp = dailyExpenses[label] ?? 0;
+
+      if (inc > maxVal) maxVal = inc;
+      if (exp > maxVal) maxVal = exp;
+
+      barGroups.add(
+        BarChartGroupData(
+          x: i,
+          barRods: [
+            BarChartRodData(
+              toY: inc,
+              color: Colors.blueAccent,
+              width: 8,
+              borderRadius: BorderRadius.circular(2),
+            ),
+            BarChartRodData(
+              toY: exp,
+              color: Colors.pinkAccent,
+              width: 8,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final maxY = (maxVal == 0 ? 100 : maxVal) * 1.2;
+    // Calculate width based on number of bars (minimum width 300)
+    final chartWidth = (allDates.length * 60.0).clamp(300.0, 2000.0);
+
     return Container(
-      height: 300,
-      padding: const EdgeInsets.all(20),
+      height: 250,
+      padding: const EdgeInsets.fromLTRB(10, 20, 20, 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 15, offset: const Offset(0, 8))
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       child: Column(
@@ -351,46 +629,86 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
               _legendItem("Expenses", Colors.pinkAccent),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
           Expanded(
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: (transactions.isEmpty ? 100 : transactions.map((t) => t.amount).reduce((a, b) => a > b ? a : b)) * 1.2,
-                barTouchData: BarTouchData(
-                  touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => Colors.blueGrey.withAlpha(230),
-                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                       return BarTooltipItem(
-                         rod.toY.toStringAsFixed(0),
-                         const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                       );
-                    },
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (val, meta) {
-                         // Find the date for this index if possible
-                         return Padding(
-                           padding: const EdgeInsets.only(top: 10.0),
-                           child: Text('${val.toInt() + 1}', style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
-                         );
-                      }
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: chartWidth,
+                child: BarChart(
+                  BarChartData(
+                    maxY: maxY,
+                    barGroups: barGroups,
+                    titlesData: FlTitlesData(
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          getTitlesWidget: (value, meta) {
+                            if (value == 0 || value == maxY)
+                              return const SizedBox();
+                            return Text(
+                              value.toInt().toString(),
+                              style: TextStyle(
+                                color: Colors.grey.shade400,
+                                fontSize: 10,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (val, meta) {
+                            int index = val.toInt();
+                            if (index >= 0 && index < allDates.length) {
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  allDates[index],
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SizedBox();
+                          },
+                        ),
+                      ),
+                    ),
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      getDrawingHorizontalLine: (value) =>
+                          FlLine(color: Colors.grey.withAlpha(30), strokeWidth: 1),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    barTouchData: BarTouchData(
+                      touchTooltipData: BarTouchTooltipData(
+                        getTooltipColor: (_) => Colors.blueGrey.withAlpha(230),
+                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                          return BarTooltipItem(
+                            rod.toY.toStringAsFixed(0),
+                            const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
-                borderData: FlBorderData(show: false),
-                gridData: const FlGridData(show: false),
-                barGroups: _generateBarGroups(transactions),
               ),
-              duration: const Duration(milliseconds: 750),
-              curve: Curves.easeInOutCubic,
             ),
           ),
         ],
@@ -407,60 +725,15 @@ class _DashboardAnalyticsScreenState extends ConsumerState<DashboardAnalyticsScr
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey,
+          ),
+        ),
       ],
     );
-  }
-
-  List<BarChartGroupData> _generateBarGroups(List<TransactionEntity> transactions) {
-     final Map<String, double> dailyExpenses = {};
-     final Map<String, double> dailyIncome = {};
-     
-     for (var tx in transactions) {
-       final dateStr = DateFormat('MM/dd').format(tx.date);
-       if (tx.type == TransactionType.expense) {
-         dailyExpenses[dateStr] = (dailyExpenses[dateStr] ?? 0) + tx.amount;
-       } else {
-         dailyIncome[dateStr] = (dailyIncome[dateStr] ?? 0) + tx.amount;
-       }
-     }
-
-     final allDates = {...dailyExpenses.keys, ...dailyIncome.keys}.toList()..sort();
-     final displayDates = allDates.length > 6 ? allDates.sublist(allDates.length - 6) : allDates;
-
-     List<BarChartGroupData> groups = [];
-     int x = 0;
-     for (var date in displayDates) {
-       groups.add(
-         BarChartGroupData(
-           x: x++,
-           barsSpace: 4,
-           barRods: [
-             BarChartRodData(
-               toY: dailyIncome[date] ?? 0,
-               gradient: const LinearGradient(
-                 colors: [Colors.blue, Colors.lightBlueAccent],
-                 begin: Alignment.bottomCenter,
-                 end: Alignment.topCenter,
-               ),
-               width: 8,
-               borderRadius: BorderRadius.circular(4),
-             ),
-             BarChartRodData(
-               toY: dailyExpenses[date] ?? 0,
-               gradient: const LinearGradient(
-                 colors: [Colors.pink, Colors.pinkAccent],
-                 begin: Alignment.bottomCenter,
-                 end: Alignment.topCenter,
-               ),
-               width: 8,
-               borderRadius: BorderRadius.circular(4),
-             ),
-           ],
-         ),
-       );
-     }
-     
-     return groups;
   }
 }
