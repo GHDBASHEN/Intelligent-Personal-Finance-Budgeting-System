@@ -147,7 +147,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                       filled: true,
                       fillColor: Theme.of(
                         context,
-                      ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      ).colorScheme.surfaceContainerHighest.withAlpha(77),
                       prefixIcon: Padding(
                         padding: const EdgeInsets.only(left: 12.0, right: 8.0),
                         child: DropdownButtonHideUnderline(
@@ -224,7 +224,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                   filled: true,
                   fillColor: Theme.of(
                     context,
-                  ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  ).colorScheme.surfaceContainerHighest.withAlpha(77),
                   prefixIcon: const Icon(Icons.note),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.qr_code_scanner, color: Colors.blueAccent),
