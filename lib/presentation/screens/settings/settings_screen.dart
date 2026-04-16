@@ -5,17 +5,17 @@ import 'package:path_provider/path_provider.dart';
 import 'package:csv/csv.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/infrastructure_providers.dart';
 import '../../providers/currency_state_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/custom_app_bar.dart';
+import '../../../domain/entities/transaction_entity.dart';
+import '../../providers/notification_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currencyService = ref.watch(currencyServiceProvider);
     final transactions = ref.watch(transactionProvider).transactions;
 
     return Scaffold(
@@ -83,7 +83,7 @@ class SettingsScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(Icons.file_download, color: Colors.orangeAccent),
                   title: const Text('Export financial summary (CSV)'),
-                  onTap: () => _exportToCSV(context, transactions),
+                  onTap: () => _exportToCSV(context, transactions, ref),
                 ),
               ],
             ),
@@ -102,25 +102,75 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _exportToCSV(BuildContext context, List transactions) async {
-    List<List<dynamic>> rows = [
-      ['Date', 'Note', 'Amount', 'Type'],
-    ];
+  Future<void> _exportToCSV(BuildContext context, List<TransactionEntity> transactions, WidgetRef ref) async {
+    try {
+      List<List<dynamic>> rows = [
+        ['Date', 'Note', 'Amount', 'Type'],
+      ];
 
-    for (var tx in transactions) {
-      rows.add([tx.date.toIso8601String(), tx.note, tx.amount, tx.type.name]);
+      for (var tx in transactions) {
+        final typeString = tx.type.toString().split('.').last;
+        rows.add([
+          tx.date.toIso8601String(),
+          tx.note,
+          tx.amount.toStringAsFixed(2),
+          typeString,
+        ]);
+      }
+
+      String csv = const CsvEncoder().convert(rows);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'finance_summary_$timestamp.csv';
+      
+      // Automatically find the Downloads location
+      Directory? directory;
+      if (Platform.isAndroid) {
+        directory = Directory('/storage/emulated/0/Download');
+        // Fallback for some Android versions if the direct path is inaccessible
+        if (!await directory.exists()) {
+          final list = await getExternalStorageDirectories(type: StorageDirectory.downloads);
+          if (list != null && list.isNotEmpty) {
+            directory = list.first;
+          } else {
+            directory = await getExternalStorageDirectory();
+          }
+        }
+      } else {
+        directory = await getDownloadsDirectory();
+      }
+
+      // Final fallback to documents if Downloads is still null
+      directory ??= await getApplicationDocumentsDirectory();
+
+      final String path = '${directory.path}/$fileName';
+      final file = File(path);
+      await file.writeAsString(csv);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('File saved to: $path'),
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'OK',
+              onPressed: () {},
+            ),
+          ),
+        );
+
+        // Trigger system-level tray notification with the file path as payload
+        ref.read(notificationServiceProvider).showDownloadNotification(
+          'Export Successful',
+          'Tap to open your financial summary',
+          payload: path,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: ${e.toString()}')),
+        );
+      }
     }
-
-    String csv = const CsvEncoder().convert(rows);
-    final directory = await getApplicationDocumentsDirectory();
-    final path = '${directory.path}/finance_summary.csv';
-    final file = File(path);
-    await file.writeAsString(csv);
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('CSV exported to Documents: $path')));
-
-    // In a real device, we would use Share.shareXFiles([XFile(path)]);
   }
 }
