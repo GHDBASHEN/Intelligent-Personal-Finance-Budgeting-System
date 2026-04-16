@@ -6,9 +6,15 @@ import 'presentation/providers/router_provider.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'theme/app_theme.dart';
 
+import 'presentation/providers/notification_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+
+  // Initialize notifications
+  final notificationService = NotificationService();
+  await notificationService.init();
 
   runApp(const ProviderScope(child: MyApp()));
 }
