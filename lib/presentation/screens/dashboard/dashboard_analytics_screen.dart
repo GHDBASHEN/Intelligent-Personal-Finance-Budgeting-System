@@ -65,13 +65,15 @@ class _DashboardAnalyticsScreenState
   Widget build(BuildContext context) {
     final filteredTransactions = ref.watch(filteredTransactionsProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
+    final currencyData = ref.watch(currencyStateProvider);
     final currencyNotifier = ref.read(currencyStateProvider.notifier);
 
     return Scaffold(
       appBar: const CustomAppBar(title: "Analytics Dashboard"),
+      drawer: _buildDrawer(),
       body: categoriesAsync.when(
         data: (categories) =>
-            _buildContent(filteredTransactions, categories, currencyNotifier),
+            _buildContent(filteredTransactions, categories, currencyNotifier, currencyData.targetCurrency),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
@@ -82,6 +84,7 @@ class _DashboardAnalyticsScreenState
     List<TransactionEntity> transactions,
     List<CategoryEntity> categories,
     dynamic currencyNotifier,
+    String currencyCode,
   ) {
     final income = transactions
         .where((t) => t.type == TransactionType.income)
@@ -135,7 +138,7 @@ class _DashboardAnalyticsScreenState
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          _buildPieChart(categoryTotals, categories),
+          _buildPieChart(categoryTotals, categories, currencyCode),
           const SizedBox(height: 32),
           const Text(
             "Expense vs Income Trend",
@@ -293,7 +296,7 @@ class _DashboardAnalyticsScreenState
                           currencyNotifier.convert(highestAmount),
                         ),
                         style: const TextStyle(
-                          color: Color.fromARGB(255, 171, 69, 69),
+                          color: Colors.black87,
                           fontWeight: FontWeight.bold,
                           fontSize: 10,
                         ),
@@ -354,6 +357,7 @@ class _DashboardAnalyticsScreenState
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
+                  color: Colors.black87,
                 ),
               ),
             ),
@@ -366,6 +370,7 @@ class _DashboardAnalyticsScreenState
   Widget _buildPieChart(
     Map<int, double> categoryTotals,
     List<CategoryEntity> categories,
+    String currencyCode,
   ) {
     if (categoryTotals.isEmpty) {
       return Container(
@@ -449,27 +454,13 @@ class _DashboardAnalyticsScreenState
                     }).toList(),
                   ),
                 ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      "TOTAL",
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    FittedBox(
-                      child: Text(
-                        totalExpense.toStringAsFixed(0),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
+                Text(
+                  currencyCode,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueAccent,
+                  ),
                 ),
               ],
             ),
@@ -734,6 +725,154 @@ class _DashboardAnalyticsScreenState
           ),
         ),
       ],
+    );
+  }
+  Widget _buildDrawer() {
+    final filter = ref.watch(filterProvider);
+    final filterNotifier = ref.read(filterProvider.notifier);
+    
+    return Drawer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.amber.shade400, Colors.orange.shade600],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.filter_list, color: Colors.white, size: 40),
+                  SizedBox(height: 8),
+                  Text(
+                    "Analytics Filters",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              "Transaction Type",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Wrap(
+              spacing: 8,
+              children: [
+                _filterChip(
+                  label: "All",
+                  isSelected: filter.type == null,
+                  onSelected: (_) => filterNotifier.setType(null),
+                ),
+                _filterChip(
+                  label: "Income",
+                  isSelected: filter.type == TransactionType.income,
+                  onSelected: (_) => filterNotifier.setType(TransactionType.income),
+                ),
+                _filterChip(
+                  label: "Expense",
+                  isSelected: filter.type == TransactionType.expense,
+                  onSelected: (_) => filterNotifier.setType(TransactionType.expense),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 32),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              "Select Month (Current Year)",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: 12,
+              itemBuilder: (context, index) {
+                final month = index + 1;
+                final now = DateTime.now();
+                final monthDate = DateTime(now.year, month);
+                final isSelected = filter.startDate?.month == month && 
+                                  filter.startDate?.year == now.year;
+                
+                return ListTile(
+                  title: Text(DateFormat('MMMM').format(monthDate)),
+                  trailing: isSelected ? const Icon(Icons.check_circle, color: Colors.orange) : null,
+                  selected: isSelected,
+                  onTap: () {
+                    final start = DateTime(now.year, month, 1);
+                    final end = DateTime(now.year, month + 1, 0, 23, 59, 59);
+                    filterNotifier.setDateRange(start, end);
+                  },
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      filterNotifier.clearFilters();
+                      Navigator.pop(context);
+                    },
+                    child: const Text("Clear All"),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text("Apply"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip({
+    required String label,
+    required bool isSelected,
+    required Function(bool) onSelected,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: onSelected,
+      selectedColor: Colors.orange.withOpacity(0.3),
+      checkmarkColor: Colors.orange,
+      labelStyle: TextStyle(
+        color: isSelected 
+            ? (isDark ? Colors.orange.shade200 : Colors.orange.shade900)
+            : (isDark ? Colors.white70 : Colors.black87),
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
     );
   }
 }
