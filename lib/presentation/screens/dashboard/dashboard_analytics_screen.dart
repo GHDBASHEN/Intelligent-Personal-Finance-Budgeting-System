@@ -59,12 +59,12 @@ class _DashboardAnalyticsScreenState
       end = null;
     }
 
-    ref.read(filterProvider.notifier).setDateRange(start, end);
+    ref.read(analyticsFilterProvider.notifier).setDateRange(start, end);
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredTransactions = ref.watch(filteredTransactionsProvider);
+    final filteredTransactions = ref.watch(filteredAnalyticsTransactionsProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
     final currencyData = ref.watch(currencyStateProvider);
     final currencyNotifier = ref.read(currencyStateProvider.notifier);
@@ -201,7 +201,7 @@ class _DashboardAnalyticsScreenState
     );
   }
 
-  Widget _buildSummarySection(
+ Widget _buildSummarySection(
     double income,
     double expense,
     String highestCategory,
@@ -211,108 +211,182 @@ class _DashboardAnalyticsScreenState
     final balance = income - expense;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 1. Main Balance "Hero" Card
+        _buildMainBalanceCard(balance, currencyNotifier),
+        const SizedBox(height: 16),
+        
+        // 2. Secondary Stats Grid
         Row(
           children: [
             Expanded(
-              child: _summaryCard(
-                "Total Income",
+              child: _statCard(
+                "Income",
                 income,
-                const Color.fromARGB(255, 67, 128, 234),
+                const Color(0xFF4380EA),
+                Icons.arrow_downward_rounded,
                 currencyNotifier,
-                Icons.account_balance_wallet,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _summaryCard(
-                "Total Spending",
+              child: _statCard(
+                "Spending",
                 expense,
-                Colors.redAccent,
+                const Color(0xFFF44336),
+                Icons.arrow_upward_rounded,
                 currencyNotifier,
-                Icons.shopping_cart,
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _summaryCard(
-                "Budget Balance",
-                balance,
-                balance >= 0 ? Colors.green : Colors.orangeAccent,
-                currencyNotifier,
-                Icons.account_balance,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Card(
-                elevation: 4,
-                shadowColor: Colors.black12,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Colors.white, Colors.amber.withAlpha(20)],
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.star, size: 14, color: Colors.amber),
-                          const SizedBox(width: 4),
-                          const Text(
-                            "Top Spending",
-                            style: TextStyle(
-                              color: Colors.amber,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        highestCategory,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 8,
-                          color: Color.fromARGB(221, 57, 24, 24),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        currencyNotifier.format(
-                          currencyNotifier.convert(highestAmount),
-                        ),
-                        style: const TextStyle(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+        
+        // 3. Top Spending Insights Card
+        _buildTopSpendingInsight(highestCategory, highestAmount, currencyNotifier),
       ],
     );
   }
 
+  Widget _buildMainBalanceCard(double balance, dynamic currencyNotifier) {
+    final isPositive = balance >= 0;
+    // We use a TweenAnimationBuilder to animate the 'value' from 0 to balance
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: balance),
+      duration: const Duration(milliseconds: 1500), // Speed of animation
+      curve: Curves.easeOutExpo, // Smooth deceleration effect
+      builder: (context, animatedValue, child) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isPositive 
+                ? [const Color(0xFF1e3c72), const Color(0xFF2a5298)] 
+                : [const Color(0xFF8e0e00), const Color(0xFF1f1c18)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (isPositive ? Colors.blue : Colors.red).withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Total Balance",
+                    style: TextStyle(
+                      color: Colors.white70, 
+                      fontSize: 14, 
+                      fontWeight: FontWeight.w500
+                    ),
+                  ),
+                  Icon(isPositive ? Icons.account_balance_wallet_outlined : Icons.warning_amber_rounded, 
+                       color: Colors.white.withOpacity(0.5), 
+                       size: 20),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Use the animatedValue here instead of the raw balance
+              FittedBox(
+                child: Text(
+                  currencyNotifier.format(currencyNotifier.convert(animatedValue)),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -1,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10), // Small spacer
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+
+  Widget _statCard(String title, double amount, Color color, IconData icon, dynamic currencyNotifier) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: color.withOpacity(0.1),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(height: 12),
+          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          const SizedBox(height: 4),
+          FittedBox(
+            child: Text(
+              currencyNotifier.format(currencyNotifier.convert(amount)),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopSpendingInsight(String category, double amount, dynamic currencyNotifier) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.amber.shade50, Colors.white],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.amber.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            backgroundColor: Colors.amber,
+            child: Icon(Icons.star_rounded, color: Colors.white),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Top Category", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 11)),
+                Text(category, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ],
+            ),
+          ),
+          Text(
+            currencyNotifier.format(currencyNotifier.convert(amount)),
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.black87),
+          ),
+        ],
+      ),
+    );
+  }
   Widget _summaryCard(
     String title,
     double amount,
@@ -729,8 +803,8 @@ class _DashboardAnalyticsScreenState
     );
   }
   Widget _buildDrawer() {
-    final filter = ref.watch(filterProvider);
-    final filterNotifier = ref.read(filterProvider.notifier);
+    final filter = ref.watch(analyticsFilterProvider);
+    final filterNotifier = ref.read(analyticsFilterProvider.notifier);
     
     return Drawer(
       child: Column(
@@ -869,6 +943,8 @@ class _DashboardAnalyticsScreenState
                     onPressed: () {
                       filterNotifier.clearFilters();
                       Navigator.pop(context);
+                      // Re-apply the default period after clearing
+                      _updateFilter(selectedPeriod);
                     },
                     child: const Text("Clear All"),
                   ),

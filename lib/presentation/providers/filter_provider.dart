@@ -102,10 +102,11 @@ final filterProvider = NotifierProvider<TransactionFilterNotifier, TransactionFi
   TransactionFilterNotifier.new,
 );
 
-final filteredTransactionsProvider = Provider<List<TransactionEntity>>((ref) {
-  final transactions = ref.watch(transactionProvider).transactions;
-  final filter = ref.watch(filterProvider);
+final analyticsFilterProvider = NotifierProvider<TransactionFilterNotifier, TransactionFilterCriteria>(
+  TransactionFilterNotifier.new,
+);
 
+List<TransactionEntity> _applyFilterLogic(List<TransactionEntity> transactions, TransactionFilterCriteria filter) {
   return transactions.where((tx) {
     if (filter.query.isNotEmpty && !tx.note.toLowerCase().contains(filter.query.toLowerCase())) {
       return false;
@@ -133,4 +134,16 @@ final filteredTransactionsProvider = Provider<List<TransactionEntity>>((ref) {
     }
     return true;
   }).toList();
+}
+
+final filteredTransactionsProvider = Provider<List<TransactionEntity>>((ref) {
+  final transactions = ref.watch(transactionProvider).transactions;
+  final filter = ref.watch(filterProvider);
+  return _applyFilterLogic(transactions, filter);
+});
+
+final filteredAnalyticsTransactionsProvider = Provider<List<TransactionEntity>>((ref) {
+  final transactions = ref.watch(transactionProvider).transactions;
+  final filter = ref.watch(analyticsFilterProvider);
+  return _applyFilterLogic(transactions, filter);
 });
