@@ -14,6 +14,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   final TextEditingController _queryController = TextEditingController();
   final TextEditingController _minAmountController = TextEditingController();
   final TextEditingController _maxAmountController = TextEditingController();
+  int? _selectedYear;
+  int? _selectedMonth;
 
   @override
   void initState() {
@@ -22,6 +24,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     _queryController.text = currentFilters.query;
     _minAmountController.text = currentFilters.minAmount?.toString() ?? '';
     _maxAmountController.text = currentFilters.maxAmount?.toString() ?? '';
+    _selectedYear = currentFilters.year;
+    _selectedMonth = currentFilters.month;
   }
 
   @override
@@ -39,6 +43,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       double.tryParse(_minAmountController.text),
       double.tryParse(_maxAmountController.text),
     );
+    notifier.setYear(_selectedYear);
+    notifier.setMonth(_selectedMonth);
     Navigator.of(context).pop();
   }
 
@@ -138,6 +144,52 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       fillColor: Colors.grey.withAlpha(20),
                       border: const OutlineInputBorder(borderSide: BorderSide.none, borderRadius: BorderRadius.all(Radius.circular(12)))
                     ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const Text('Date Filter', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int?>(
+                    value: _selectedYear,
+                    decoration: InputDecoration(
+                      labelText: 'Year',
+                      filled: true,
+                      fillColor: Colors.grey.withAlpha(20),
+                      border: const OutlineInputBorder(borderSide: BorderSide.none, borderRadius: BorderRadius.all(Radius.circular(12))),
+                    ),
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('All')),
+                      ...List.generate(11, (index) => 2020 + index).map((year) => DropdownMenuItem(value: year, child: Text(year.toString()))),
+                    ],
+                    onChanged: (val) => setState(() => _selectedYear = val),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: DropdownButtonFormField<int?>(
+                    value: _selectedMonth,
+                    decoration: InputDecoration(
+                      labelText: 'Month',
+                      filled: true,
+                      fillColor: Colors.grey.withAlpha(20),
+                      border: const OutlineInputBorder(borderSide: BorderSide.none, borderRadius: BorderRadius.all(Radius.circular(12))),
+                    ),
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('All')),
+                      ...List.generate(12, (index) => index + 1).map((month) => DropdownMenuItem(
+                            value: month,
+                            child: Text([
+                              'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                            ][month - 1]),
+                          )),
+                    ],
+                    onChanged: (val) => setState(() => _selectedMonth = val),
                   ),
                 ),
               ],
