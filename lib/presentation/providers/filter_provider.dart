@@ -9,6 +9,8 @@ class TransactionFilterCriteria {
   final DateTime? endDate;
   final double? minAmount;
   final double? maxAmount;
+  final int? year;
+  final int? month;
 
   TransactionFilterCriteria({
     this.query = '',
@@ -17,6 +19,8 @@ class TransactionFilterCriteria {
     this.endDate,
     this.minAmount,
     this.maxAmount,
+    this.year,
+    this.month,
   });
 
   TransactionFilterCriteria copyWith({
@@ -31,6 +35,10 @@ class TransactionFilterCriteria {
     bool clearMinAmount = false,
     double? maxAmount,
     bool clearMaxAmount = false,
+    int? year,
+    bool clearYear = false,
+    int? month,
+    bool clearMonth = false,
   }) {
     return TransactionFilterCriteria(
       query: query ?? this.query,
@@ -39,6 +47,8 @@ class TransactionFilterCriteria {
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
       minAmount: clearMinAmount ? null : (minAmount ?? this.minAmount),
       maxAmount: clearMaxAmount ? null : (maxAmount ?? this.maxAmount),
+      year: clearYear ? null : (year ?? this.year),
+      month: clearMonth ? null : (month ?? this.month),
     );
   }
 }
@@ -75,6 +85,14 @@ class TransactionFilterNotifier extends Notifier<TransactionFilterCriteria> {
     );
   }
 
+  void setYear(int? year) {
+    state = state.copyWith(year: year, clearYear: year == null);
+  }
+
+  void setMonth(int? month) {
+    state = state.copyWith(month: month, clearMonth: month == null);
+  }
+
   void clearFilters() {
     state = TransactionFilterCriteria();
   }
@@ -105,6 +123,12 @@ final filteredTransactionsProvider = Provider<List<TransactionEntity>>((ref) {
       return false;
     }
     if (filter.maxAmount != null && tx.amount > filter.maxAmount!) {
+      return false;
+    }
+    if (filter.year != null && tx.date.year != filter.year) {
+      return false;
+    }
+    if (filter.month != null && tx.date.month != filter.month) {
       return false;
     }
     return true;
