@@ -21,6 +21,7 @@ class _DashboardAnalyticsScreenState
     extends ConsumerState<DashboardAnalyticsScreen> {
   String selectedPeriod = 'Month';
   bool _initialized = false;
+  int filteringYear = DateTime.now().year;
 
   @override
   void didChangeDependencies() {
@@ -795,7 +796,44 @@ class _DashboardAnalyticsScreenState
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
-              "Select Month (Current Year)",
+              "Select Year",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: filteringYear,
+                  isExpanded: true,
+                  items: List.generate(10, (index) => DateTime.now().year - 5 + index)
+                      .map((year) => DropdownMenuItem(
+                            value: year,
+                            child: Text(year.toString()),
+                          ))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        filteringYear = val;
+                      });
+                    }
+                  },
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              "Select Month",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
@@ -805,18 +843,17 @@ class _DashboardAnalyticsScreenState
               itemCount: 12,
               itemBuilder: (context, index) {
                 final month = index + 1;
-                final now = DateTime.now();
-                final monthDate = DateTime(now.year, month);
+                final monthDate = DateTime(filteringYear, month);
                 final isSelected = filter.startDate?.month == month && 
-                                  filter.startDate?.year == now.year;
+                                  filter.startDate?.year == filteringYear;
                 
                 return ListTile(
                   title: Text(DateFormat('MMMM').format(monthDate)),
                   trailing: isSelected ? const Icon(Icons.check_circle, color: Colors.orange) : null,
                   selected: isSelected,
                   onTap: () {
-                    final start = DateTime(now.year, month, 1);
-                    final end = DateTime(now.year, month + 1, 0, 23, 59, 59);
+                    final start = DateTime(filteringYear, month, 1);
+                    final end = DateTime(filteringYear, month + 1, 0, 23, 59, 59);
                     filterNotifier.setDateRange(start, end);
                   },
                 );
