@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -164,10 +165,17 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                       ),
                     ),
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    validator: (val) =>
-                        (val == null || double.tryParse(val) == null)
-                        ? 'Enter valid amount'
-                        : null,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                      LengthLimitingTextInputFormatter(12), // Roughly 10 digits + decimal + 2 decimals
+                    ],
+                    validator: (val) {
+                      if (val == null || double.tryParse(val) == null) return 'Enter valid amount';
+                      final amount = double.parse(val);
+                      if (amount > 1000000000) return 'Amount exceeds limit (1 Billion)';
+                      if (amount <= 0) return 'Amount must be greater than 0';
+                      return null;
+                    },
                     onSaved: (val) => _amount = double.parse(val!),
                   );
                 },
@@ -215,8 +223,11 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _noteController,
+                maxLength: 100,
+                maxLengthEnforcement: MaxLengthEnforcement.enforced,
                 decoration: InputDecoration(
                   labelText: 'Note / Product',
+                  counterText: "", // Hide the counter for cleaner UI
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,

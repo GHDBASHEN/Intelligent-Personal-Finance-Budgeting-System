@@ -113,10 +113,16 @@ class _TransactionsListScreenState
                       : Colors.deepOrange,
                 ),
               ),
-              title: Text(tx.note.isEmpty ? 'Transaction' : tx.note),
+              title: Text(
+                tx.note.isEmpty ? 'Transaction' : tx.note,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Text(DateFormat.yMMMd().format(tx.date)),
               trailing: Text(
                 '${tx.type == TransactionType.income ? '+' : '-'} ${currencyNotifier.format(currencyNotifier.convert(tx.amount))}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,

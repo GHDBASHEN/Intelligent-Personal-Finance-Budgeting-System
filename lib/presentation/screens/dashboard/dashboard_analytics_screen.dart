@@ -375,7 +375,12 @@ class _DashboardAnalyticsScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text("Top Category", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 11)),
-                Text(category, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(
+                  category,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
               ],
             ),
           ),
@@ -782,8 +787,9 @@ class _DashboardAnalyticsScreenState
     );
   }
 
-  Widget _legendItem(String label, Color color) {
+  Widget _legendItem(String label, Color color, {bool isExpanded = false}) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 12,
@@ -791,14 +797,28 @@ class _DashboardAnalyticsScreenState
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey,
+        if (isExpanded)
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
+              ),
+            ),
+          )
+        else
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey,
+            ),
           ),
-        ),
       ],
     );
   }
