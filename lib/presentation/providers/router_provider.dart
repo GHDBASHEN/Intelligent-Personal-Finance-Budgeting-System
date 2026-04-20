@@ -1,3 +1,4 @@
+// lib/presentation/providers/router_provider.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,7 @@ import '../screens/dashboard/past_details_screen.dart';
 import '../screens/transactions/transactions_list_screen.dart';
 import '../screens/transactions/transaction_form_screen.dart';
 import '../screens/settings/settings_screen.dart';
+import '../screens/profile/profile_screen.dart';
 
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
@@ -77,6 +79,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/transactions',
             name: 'transactions',
             builder: (context, state) => const TransactionsListScreen(),
+          ),
+          GoRoute(
+            path: '/profile',
+            name: 'profile',
+            builder: (context, state) => const ProfileScreen(),
           ),
           GoRoute(
             path: '/settings',

@@ -58,6 +58,10 @@ dependencies:
   shared_preferences: ^2.5.5
   pinput: ^6.0.2
   email_otp: ^3.1.0
+  
+  # Profile & Security Dependencies
+  image_picker: ^1.0.5  # For picking profile pictures from gallery/camera
+  crypto: ^3.0.3        # For password hashing
 
 dev_dependencies:
   flutter_test:

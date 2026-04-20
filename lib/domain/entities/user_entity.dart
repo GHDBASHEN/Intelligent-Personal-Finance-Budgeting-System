@@ -1,14 +1,21 @@
+// lib/domain/entities/user_entity.dart
 class UserEntity {
   final int? id;
   final String username;
   final String email;
-  final String password; // In a real app, this would be hashed or handled by Firebase
+  final String password;
+  final String? profilePicturePath;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   UserEntity({
     this.id,
     required this.username,
     required this.email,
     required this.password,
+    this.profilePicturePath,
+    this.createdAt,
+    this.updatedAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -17,6 +24,9 @@ class UserEntity {
       'username': username,
       'email': email,
       'password': password,
+      'profile_picture_path': profilePicturePath,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 
@@ -26,6 +36,29 @@ class UserEntity {
       username: map['username'],
       email: map['email'],
       password: map['password'],
+      profilePicturePath: map['profile_picture_path'],
+      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at']) : null,
+      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at']) : null,
+    );
+  }
+  
+  UserEntity copyWith({
+    int? id,
+    String? username,
+    String? email,
+    String? password,
+    String? profilePicturePath,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return UserEntity(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      password: password ?? this.password,
+      profilePicturePath: profilePicturePath ?? this.profilePicturePath,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

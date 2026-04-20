@@ -1,3 +1,4 @@
+// lib/presentation/providers/auth_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/user_entity.dart';
 import 'infrastructure_providers.dart';
@@ -34,12 +35,14 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  void updateUser(UserEntity updatedUser) {
+    state = state.copyWith(user: updatedUser);
+  }
+
   Future<void> login(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final user = await ref
-          .read(authRepositoryProvider)
-          .login(email, password);
+      final user = await ref.read(authRepositoryProvider).login(email, password);
       if (user != null) {
         state = state.copyWith(user: user, isLoading: false);
       } else {
@@ -56,11 +59,9 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<void> register(String username, String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final user = await ref
-          .read(authRepositoryProvider)
-          .register(
-            UserEntity(username: username, email: email, password: password),
-          );
+      final user = await ref.read(authRepositoryProvider).register(
+        UserEntity(username: username, email: email, password: password),
+      );
       state = state.copyWith(user: user, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

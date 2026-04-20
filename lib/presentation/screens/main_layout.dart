@@ -1,6 +1,8 @@
+// lib/presentation/screens/main_layout.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:io';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 
@@ -39,10 +41,15 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
               UserAccountsDrawerHeader(
                 accountName: Text(authState.user?.username ?? 'Guest'),
                 accountEmail: Text(authState.user?.email ?? 'Not logged in'),
-                currentAccountPicture: const CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.person, color: Colors.orange),
-                ),
+                currentAccountPicture: authState.user?.profilePicturePath != null && authState.user!.profilePicturePath!.isNotEmpty
+                    ? CircleAvatar(
+                        backgroundImage: FileImage(File(authState.user!.profilePicturePath!)),
+                        backgroundColor: Colors.white,
+                      )
+                    : const CircleAvatar(
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.person, color: Colors.orange, size: 40),
+                      ),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Colors.orange, Colors.amber],
@@ -66,6 +73,14 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 },
               ),
               ListTile(
+                leading: const Icon(Icons.person_outline),
+                title: const Text('Profile'),
+                onTap: () {
+                  context.go('/profile');
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.settings),
                 title: const Text('Settings'),
                 onTap: () {
@@ -78,7 +93,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 leading: const Icon(Icons.help_outline),
                 title: const Text('Help & Support'),
                 onTap: () {
-                  // Show help dialog
                   Navigator.pop(context);
                 },
               ),
@@ -86,7 +100,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 leading: const Icon(Icons.info_outline),
                 title: const Text('About'),
                 onTap: () {
-                  // Show about dialog
                   Navigator.pop(context);
                 },
               ),
@@ -120,6 +133,11 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
             label: 'Transactions',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),
             activeIcon: Icon(Icons.settings),
             label: 'Settings',
@@ -132,7 +150,8 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   int _calculateSelectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
     if (location.startsWith('/transactions')) return 1;
-    if (location.startsWith('/settings')) return 2;
+    if (location.startsWith('/profile')) return 2;
+    if (location.startsWith('/settings')) return 3;
     return 0;
   }
 
@@ -145,6 +164,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         context.go('/transactions');
         break;
       case 2:
+        context.go('/profile');
+        break;
+      case 3:
         context.go('/settings');
         break;
     }
