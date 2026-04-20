@@ -1,5 +1,4 @@
 // lib/presentation/providers/profile_provider.dart
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../data/repositories/repository_impls.dart';
@@ -38,6 +37,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
 
   @override
   ProfileState build() {
+    // Load user data immediately
     _loadCurrentUser();
     return ProfileState(isLoading: true);
   }
@@ -45,6 +45,20 @@ class ProfileNotifier extends Notifier<ProfileState> {
   Future<void> _loadCurrentUser() async {
     final currentUser = await _authRepo.getCurrentUser();
     state = state.copyWith(user: currentUser, isLoading: false);
+    
+    // Also update auth provider if needed
+    if (currentUser != null) {
+      ref.read(authProvider.notifier).updateUser(currentUser);
+    }
+  }
+
+  // Add this method to refresh user data
+  Future<void> refreshUser() async {
+    final currentUser = await _authRepo.getCurrentUser();
+    state = state.copyWith(user: currentUser);
+    if (currentUser != null) {
+      ref.read(authProvider.notifier).updateUser(currentUser);
+    }
   }
 
   Future<void> updateProfile({
@@ -64,8 +78,8 @@ class ProfileNotifier extends Notifier<ProfileState> {
       
       final savedUser = await _authRepo.updateUserProfile(updatedUser);
       
+      // Update both providers
       ref.read(authProvider.notifier).updateUser(savedUser);
-      
       state = state.copyWith(user: savedUser, isUpdating: false);
     } catch (e) {
       state = state.copyWith(isUpdating: false, error: e.toString());
@@ -82,16 +96,13 @@ class ProfileNotifier extends Notifier<ProfileState> {
       final currentUser = state.user;
       if (currentUser == null) throw Exception('User not found');
       
-      // Direct verification of current password
       final isValid = await _authRepo.verifyUserPassword(currentUser.id!, currentPassword);
       
       if (!isValid) {
         throw Exception('Current password is incorrect');
       }
       
-      // Update to new password
       await _authRepo.updateUserPassword(currentUser.id!, newPassword);
-      
       state = state.copyWith(isUpdating: false);
     } catch (e) {
       state = state.copyWith(isUpdating: false, error: e.toString());

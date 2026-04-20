@@ -20,7 +20,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'finance_system.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onConfigure: _onConfigure,
       onUpgrade: _onUpgrade,
@@ -41,7 +41,8 @@ class DatabaseHelper {
         password_salt TEXT NOT NULL,
         profile_picture_path TEXT,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        default_currency TEXT DEFAULT 'USD'
       )
     ''');
 
@@ -73,6 +74,11 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 3) {
+      try {
+        await db.execute('ALTER TABLE users ADD COLUMN default_currency TEXT DEFAULT "USD"');
+      } catch (e) {}
+    }
     if (oldVersion < 2) {
       try {
         await db.execute('ALTER TABLE users ADD COLUMN password_salt TEXT DEFAULT ""');
@@ -87,7 +93,6 @@ class DatabaseHelper {
         await db.execute('ALTER TABLE users ADD COLUMN updated_at TEXT');
       } catch (e) {}
       
-      // Set default dates for existing users
       final now = DateTime.now().toIso8601String();
       await db.execute('UPDATE users SET created_at = "$now", updated_at = "$now" WHERE created_at IS NULL');
     }

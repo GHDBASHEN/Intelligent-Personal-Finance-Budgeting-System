@@ -7,6 +7,7 @@ class UserEntity {
   final String? profilePicturePath;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String defaultCurrency;
 
   UserEntity({
     this.id,
@@ -16,6 +17,7 @@ class UserEntity {
     this.profilePicturePath,
     this.createdAt,
     this.updatedAt,
+    this.defaultCurrency = 'USD',
   });
 
   Map<String, dynamic> toMap() {
@@ -27,6 +29,7 @@ class UserEntity {
       'profile_picture_path': profilePicturePath,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'default_currency': defaultCurrency,
     };
   }
 
@@ -39,6 +42,7 @@ class UserEntity {
       profilePicturePath: map['profile_picture_path'],
       createdAt: map['created_at'] != null ? DateTime.parse(map['created_at']) : null,
       updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at']) : null,
+      defaultCurrency: map['default_currency'] ?? 'USD',
     );
   }
   
@@ -50,6 +54,7 @@ class UserEntity {
     String? profilePicturePath,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? defaultCurrency,
   }) {
     return UserEntity(
       id: id ?? this.id,
@@ -59,6 +64,7 @@ class UserEntity {
       profilePicturePath: profilePicturePath ?? this.profilePicturePath,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      defaultCurrency: defaultCurrency ?? this.defaultCurrency,
     );
   }
 }

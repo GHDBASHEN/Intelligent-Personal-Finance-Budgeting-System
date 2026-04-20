@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'dart:io';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/profile_provider.dart'; // Add this import
 
 class MainLayout extends ConsumerStatefulWidget {
   final Widget child;
@@ -19,8 +20,12 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final profileState = ref.watch(profileProvider); // Add this to get latest profile data
     final themeMode = ref.watch(themeModeProvider);
     final isDark = themeMode == ThemeMode.dark;
+    
+    // Use profileState.user first, then fallback to authState.user
+    final user = profileState.user ?? authState.user;
 
     return Scaffold(
       appBar: AppBar(
@@ -39,11 +44,11 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
           child: Column(
             children: [
               UserAccountsDrawerHeader(
-                accountName: Text(authState.user?.username ?? 'Guest'),
-                accountEmail: Text(authState.user?.email ?? 'Not logged in'),
-                currentAccountPicture: authState.user?.profilePicturePath != null && authState.user!.profilePicturePath!.isNotEmpty
+                accountName: Text(user?.username ?? 'Guest'),
+                accountEmail: Text(user?.email ?? 'No email'), // This will now show the actual email
+                currentAccountPicture: user?.profilePicturePath != null && user!.profilePicturePath!.isNotEmpty
                     ? CircleAvatar(
-                        backgroundImage: FileImage(File(authState.user!.profilePicturePath!)),
+                        backgroundImage: FileImage(File(user.profilePicturePath!)),
                         backgroundColor: Colors.white,
                       )
                     : const CircleAvatar(
@@ -55,6 +60,15 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                     colors: [Colors.orange, Colors.amber],
                   ),
                 ),
+              ),
+              // Profile should be FIRST in the sidebar
+              ListTile(
+                leading: const Icon(Icons.person_outline),
+                title: const Text('Profile'),
+                onTap: () {
+                  context.go('/profile');
+                  Navigator.pop(context);
+                },
               ),
               ListTile(
                 leading: const Icon(Icons.dashboard),
@@ -69,14 +83,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 title: const Text('Transactions'),
                 onTap: () {
                   context.go('/transactions');
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.person_outline),
-                title: const Text('Profile'),
-                onTap: () {
-                  context.go('/profile');
                   Navigator.pop(context);
                 },
               ),

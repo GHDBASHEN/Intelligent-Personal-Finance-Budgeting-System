@@ -1,4 +1,3 @@
-// lib/presentation/providers/router_provider.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,19 +16,17 @@ class RouterNotifier extends ChangeNotifier {
   bool _isLoggedIn = false;
 
   RouterNotifier(this._ref) {
-    _ref.listen(authProvider.select((state) => state.user != null), (_, next) {
-      _isLoggedIn = next;
-      notifyListeners();
+    _ref.listen<AuthNotifier>(authProvider, (previous, next) {
+      final isLoggedIn = next.state.user != null;
+      if (_isLoggedIn != isLoggedIn) {
+        _isLoggedIn = isLoggedIn;
+        notifyListeners();
+      }
     });
-    _isLoggedIn = _ref.read(authProvider).user != null;
+    _isLoggedIn = _ref.read(authProvider).state.user != null;
   }
 
   bool get isLoggedIn => _isLoggedIn;
-  
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -49,7 +46,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      // Auth routes
       GoRoute(
         path: '/login',
         name: 'login',
@@ -65,8 +61,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
       ),
-      
-      // Main app with ShellRoute (preserves bottom nav)
       ShellRoute(
         builder: (context, state, child) => MainLayout(child: child),
         routes: [
@@ -92,8 +86,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      
-      // Modal routes (no bottom nav)
       GoRoute(
         path: '/dashboard/past-details',
         name: 'past-details',

@@ -1,6 +1,4 @@
 // lib/data/repositories/repository_impls.dart
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../domain/entities/user_entity.dart';
@@ -77,6 +75,7 @@ class AuthRepositoryImpl implements AuthRepository {
       'profile_picture_path': user.profilePicturePath,
       'created_at': now,
       'updated_at': now,
+      'default_currency': user.defaultCurrency,
     };
     
     final id = await db.insert('users', userMap);
@@ -88,6 +87,7 @@ class AuthRepositoryImpl implements AuthRepository {
       profilePicturePath: user.profilePicturePath,
       createdAt: DateTime.parse(now),
       updatedAt: DateTime.parse(now),
+      defaultCurrency: user.defaultCurrency,
     );
     
     final prefs = await SharedPreferences.getInstance();
@@ -207,9 +207,22 @@ class AuthRepositoryImpl implements AuthRepository {
     
     return PasswordHashService.verifyPassword(password, salt, storedHash);
   }
+
+  // Get user's default currency
+  Future<String> getUserDefaultCurrency(int userId) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'users',
+      where: 'id = ?',
+      whereArgs: [userId],
+    );
+    if (maps.isNotEmpty) {
+      return maps.first['default_currency'] ?? 'USD';
+    }
+    return 'USD';
+  }
 }
 
-// Keep your existing TransactionRepositoryImpl and CategoryRepositoryImpl unchanged
 class TransactionRepositoryImpl implements TransactionRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
 

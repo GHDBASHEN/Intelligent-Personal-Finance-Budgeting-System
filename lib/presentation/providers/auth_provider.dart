@@ -1,7 +1,9 @@
-// lib/presentation/providers/auth_provider.dart
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/user_entity.dart';
+import '../../domain/repositories/repositories.dart';
 import 'infrastructure_providers.dart';
+import 'currency_state_provider.dart';
 
 class AuthState {
   final UserEntity? user;
@@ -19,95 +21,120 @@ class AuthState {
   }
 }
 
-class AuthNotifier extends Notifier<AuthState> {
-  @override
-  AuthState build() {
+class AuthNotifier extends ChangeNotifier {
+  AuthState _state = AuthState(isLoading: true);
+  AuthState get state => _state;
+
+  final AuthRepository authRepo;
+  final CurrencyNotifier currencyNotifier;
+
+  AuthNotifier(this.authRepo, this.currencyNotifier) {
     _checkCurrentUser();
-    return AuthState(isLoading: true);
+  }
+
+  void _updateState(AuthState newState) {
+    _state = newState;
+    notifyListeners();
   }
 
   Future<void> _checkCurrentUser() async {
     try {
-      final user = await ref.read(authRepositoryProvider).getCurrentUser();
-      state = state.copyWith(user: user, isLoading: false);
+      final user = await authRepo.getCurrentUser();
+      if (user != null) {
+        await currencyNotifier.loadUserDefaultCurrency(user.id!);
+      }
+      _updateState(AuthState(user: user, isLoading: false));
     } catch (e) {
-      state = state.copyWith(isLoading: false);
+      _updateState(AuthState(isLoading: false));
     }
   }
 
   void updateUser(UserEntity updatedUser) {
-    state = state.copyWith(user: updatedUser);
+    _updateState(AuthState(user: updatedUser, isLoading: false));
   }
 
-  Future<void> login(String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final user = await ref.read(authRepositoryProvider).login(email, password);
-      if (user != null) {
-        state = state.copyWith(user: user, isLoading: false);
-      } else {
-        state = state.copyWith(
-          isLoading: false,
-          error: 'Invalid email or password',
-        );
-      }
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+  Future<void> refreshUser() async {
+    final user = await authRepo.getCurrentUser();
+    _updateState(AuthState(user: user, isLoading: false));
+    if (user != null) {
+      await currencyNotifier.loadUserDefaultCurrency(user.id!);
     }
   }
 
-  Future<void> register(String username, String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<void> login(String email, String password) async {
+    _updateState(AuthState(isLoading: true));
     try {
-      final user = await ref.read(authRepositoryProvider).register(
-        UserEntity(username: username, email: email, password: password),
-      );
-      state = state.copyWith(user: user, isLoading: false);
+      final user = await authRepo.login(email, password);
+      if (user != null) {
+        await currencyNotifier.loadUserDefaultCurrency(user.id!);
+        _updateState(AuthState(user: user, isLoading: false));
+      } else {
+        _updateState(AuthState(isLoading: false, error: 'Invalid email or password'));
+      }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      _updateState(AuthState(isLoading: false, error: e.toString()));
+    }
+  }
+
+  Future<void> register(String username, String email, String password, {String defaultCurrency = 'USD'}) async {
+    _updateState(AuthState(isLoading: true));
+    try {
+      final user = await authRepo.register(
+        UserEntity(
+          username: username, 
+          email: email, 
+          password: password,
+          defaultCurrency: defaultCurrency,
+        ),
+      );
+      _updateState(AuthState(user: user, isLoading: false));
+    } catch (e) {
+      _updateState(AuthState(isLoading: false, error: e.toString()));
     }
   }
 
   Future<void> logout() async {
-    await ref.read(authRepositoryProvider).logout();
-    state = AuthState();
+    await authRepo.logout();
+    _updateState(AuthState());
   }
 
   Future<void> forgotPassword(String email) async {
-    state = state.copyWith(isLoading: true, error: null);
+    _updateState(AuthState(isLoading: true));
     try {
-      await ref.read(authRepositoryProvider).forgotPassword(email);
-      state = state.copyWith(isLoading: false, error: null);
+      await authRepo.forgotPassword(email);
+      _updateState(AuthState(isLoading: false));
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      _updateState(AuthState(isLoading: false, error: e.toString()));
       rethrow;
     }
   }
 
   Future<bool> checkEmailExists(String email) async {
-    state = state.copyWith(isLoading: true, error: null);
+    _updateState(AuthState(isLoading: true));
     try {
-      final exists = await ref.read(authRepositoryProvider).checkEmailExists(email);
-      state = state.copyWith(isLoading: false);
+      final exists = await authRepo.checkEmailExists(email);
+      _updateState(AuthState(isLoading: false));
       return exists;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      _updateState(AuthState(isLoading: false, error: e.toString()));
       return false;
     }
   }
 
   Future<void> updatePassword(String email, String newPassword) async {
-    state = state.copyWith(isLoading: true, error: null);
+    _updateState(AuthState(isLoading: true));
     try {
-      await ref.read(authRepositoryProvider).updatePassword(email, newPassword);
-      state = state.copyWith(isLoading: false);
+      await authRepo.updatePassword(email, newPassword);
+      _updateState(AuthState(isLoading: false));
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      _updateState(AuthState(isLoading: false, error: e.toString()));
       rethrow;
     }
   }
 }
 
-final authProvider = NotifierProvider<AuthNotifier, AuthState>(
-  AuthNotifier.new,
-);
+final authProvider = ChangeNotifierProvider<AuthNotifier>((ref) {
+  final authRepo = ref.read(authRepositoryProvider);
+  final currencyNotifier = ref.read(currencyStateProvider.notifier);
+  return AuthNotifier(authRepo, currencyNotifier);
+});

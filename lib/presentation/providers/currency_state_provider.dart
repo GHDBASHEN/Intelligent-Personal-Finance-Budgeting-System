@@ -1,6 +1,8 @@
+// lib/presentation/providers/currency_state_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'infrastructure_providers.dart';
+import '../../data/repositories/repository_impls.dart';
 
 class CurrencyState {
   final String baseCurrency;
@@ -37,7 +39,6 @@ class CurrencyState {
 class CurrencyNotifier extends Notifier<CurrencyState> {
   @override
   CurrencyState build() {
-    // Initial fetch
     Future.microtask(() => fetchRates());
     return CurrencyState();
   }
@@ -72,11 +73,18 @@ class CurrencyNotifier extends Notifier<CurrencyState> {
     state = state.copyWith(targetCurrency: currency);
   }
 
+  // Load user's default currency from database
+  Future<void> loadUserDefaultCurrency(int userId) async {
+    final authRepo = AuthRepositoryImpl();
+    final defaultCurrency = await authRepo.getUserDefaultCurrency(userId);
+    state = state.copyWith(targetCurrency: defaultCurrency, baseCurrency: defaultCurrency);
+  }
+
   double convert(double amount) {
     if (state.baseCurrency == state.targetCurrency) return amount;
     
     final rate = state.rates[state.targetCurrency];
-    if (rate == null) return amount; // Fallback if rate not found
+    if (rate == null) return amount;
     
     return amount * rate;
   }
@@ -85,7 +93,7 @@ class CurrencyNotifier extends Notifier<CurrencyState> {
     if (state.baseCurrency == fromCurrency) return amount;
     
     final rate = state.rates[fromCurrency];
-    if (rate == null || rate == 0) return amount; // Fallback if rate not found
+    if (rate == null || rate == 0) return amount;
     
     return amount / rate;
   }
