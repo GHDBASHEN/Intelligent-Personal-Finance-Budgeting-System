@@ -93,7 +93,7 @@ class TransactionNotifier extends Notifier<TransactionState> {
     }
   }
 
-  Future<void> deleteTransaction(int id) async {
+  Future<void> deleteTransaction(String id) async {
     try {
       await ref.read(transactionRepositoryProvider).deleteTransaction(id);
       state = state.copyWith(
@@ -108,7 +108,7 @@ class TransactionNotifier extends Notifier<TransactionState> {
   Future<void> applyFilters({
     DateTime? startDate,
     DateTime? endDate,
-    int? categoryId,
+    String? categoryId,
     TransactionType? type,
   }) async {
     state = state.copyWith(isLoading: true, error: null);

@@ -26,7 +26,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
   late double _amount;
   late DateTime _selectedDate;
   late TransactionType _type;
-  int? _selectedCategoryId;
+  String? _selectedCategoryId;
   String? _selectedEntryCurrency;
 
   @override
@@ -50,7 +50,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
       _formKey.currentState!.save();
       final user = ref.read(authProvider).user;
       
-      int? categoryId = _selectedCategoryId;
+      String? categoryId = _selectedCategoryId;
       if (_type == TransactionType.income) {
         final categories = ref.read(categoriesProvider).value;
         if (categories != null && categories.isNotEmpty) {
@@ -60,7 +60,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
           );
           categoryId = incomeCategory.id;
         } else {
-          categoryId = 1; // default index in local DB
+          categoryId = "1"; // default index in local DB (as string)
         }
       }
 
@@ -175,7 +175,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
               const SizedBox(height: 16),
               if (_type == TransactionType.expense) ...[
                 categoriesAsync.when(
-                  data: (categories) => DropdownButtonFormField<int>(
+                  data: (categories) => DropdownButtonFormField<String>(
                     initialValue: _selectedCategoryId,
                     decoration: const InputDecoration(
                       labelText: 'Category',

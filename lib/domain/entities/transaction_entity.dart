@@ -1,9 +1,9 @@
 enum TransactionType { income, expense }
 
 class TransactionEntity {
-  final int? id;
-  final int userId;
-  final int categoryId;
+  final String? id;
+  final String userId;
+  final String categoryId;
   final double amount;
   final String note;
   final DateTime date;
@@ -33,13 +33,13 @@ class TransactionEntity {
 
   factory TransactionEntity.fromMap(Map<String, dynamic> map) {
     return TransactionEntity(
-      id: map['id'],
-      userId: map['user_id'],
-      categoryId: map['category_id'],
-      amount: (map['amount'] as num).toDouble(),
-      note: map['note'],
-      date: DateTime.parse(map['date']),
-      type: TransactionType.values.byName(map['type']),
+      id: map['id']?.toString(),
+      userId: map['user_id']?.toString() ?? '',
+      categoryId: map['category_id']?.toString() ?? '',
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+      note: map['note'] ?? '',
+      date: map['date'] != null ? DateTime.parse(map['date']) : DateTime.now(),
+      type: TransactionType.values.byName(map['type'] ?? 'expense'),
     );
   }
 }

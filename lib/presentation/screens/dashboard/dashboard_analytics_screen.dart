@@ -95,7 +95,7 @@ class _DashboardAnalyticsScreenState
         .fold(0.0, (sum, t) => sum + t.amount);
 
     // Group expenses by category
-    final categoryTotals = <int, double>{};
+    final categoryTotals = <String, double>{};
     for (var tx in transactions.where(
       (t) => t.type == TransactionType.expense,
     )) {
@@ -443,7 +443,7 @@ class _DashboardAnalyticsScreenState
   }
 
   Widget _buildPieChart(
-    Map<int, double> categoryTotals,
+    Map<String, double> categoryTotals,
     List<CategoryEntity> categories,
     String currencyCode,
   ) {
