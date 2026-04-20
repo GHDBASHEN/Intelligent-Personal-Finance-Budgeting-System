@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -26,7 +27,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
   late double _amount;
   late DateTime _selectedDate;
   late TransactionType _type;
-  int? _selectedCategoryId;
+  String? _selectedCategoryId;
   String? _selectedEntryCurrency;
 
   @override
@@ -50,7 +51,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
       _formKey.currentState!.save();
       final user = ref.read(authProvider).user;
       
-      int? categoryId = _selectedCategoryId;
+      String? categoryId = _selectedCategoryId;
       if (_type == TransactionType.income) {
         final categories = ref.read(categoriesProvider).value;
         if (categories != null && categories.isNotEmpty) {
@@ -60,7 +61,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
           );
           categoryId = incomeCategory.id;
         } else {
-          categoryId = 1; // default index in local DB
+          categoryId = "1"; // default index in local DB (as string)
         }
       }
 
@@ -164,10 +165,17 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                       ),
                     ),
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    validator: (val) =>
-                        (val == null || double.tryParse(val) == null)
-                        ? 'Enter valid amount'
-                        : null,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                      LengthLimitingTextInputFormatter(12), // Roughly 10 digits + decimal + 2 decimals
+                    ],
+                    validator: (val) {
+                      if (val == null || double.tryParse(val) == null) return 'Enter valid amount';
+                      final amount = double.parse(val);
+                      if (amount > 1000000000) return 'Amount exceeds limit (1 Billion)';
+                      if (amount <= 0) return 'Amount must be greater than 0';
+                      return null;
+                    },
                     onSaved: (val) => _amount = double.parse(val!),
                   );
                 },
@@ -175,7 +183,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
               const SizedBox(height: 16),
               if (_type == TransactionType.expense) ...[
                 categoriesAsync.when(
-                  data: (categories) => DropdownButtonFormField<int>(
+                  data: (categories) => DropdownButtonFormField<String>(
                     initialValue: _selectedCategoryId,
                     decoration: const InputDecoration(
                       labelText: 'Category',
@@ -215,8 +223,11 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _noteController,
+                maxLength: 100,
+                maxLengthEnforcement: MaxLengthEnforcement.enforced,
                 decoration: InputDecoration(
                   labelText: 'Note / Product',
+                  counterText: "", // Hide the counter for cleaner UI
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,

@@ -13,21 +13,21 @@ abstract class AuthRepository {
 }
 
 abstract class TransactionRepository {
-  Future<List<TransactionEntity>> getTransactions({int? limit, int? offset, int? userId});
-  Future<int> addTransaction(TransactionEntity transaction);
+  Future<List<TransactionEntity>> getTransactions({int? limit, int? offset, String? userId});
+  Future<String> addTransaction(TransactionEntity transaction);
   Future<void> updateTransaction(TransactionEntity transaction);
-  Future<void> deleteTransaction(int id);
+  Future<void> deleteTransaction(String id);
   Future<List<TransactionEntity>> filterTransactions({
-    int? userId,
+    String? userId,
     DateTime? startDate,
     DateTime? endDate,
-    int? categoryId,
+    String? categoryId,
     TransactionType? type,
   });
 }
 
 abstract class CategoryRepository {
   Future<List<CategoryEntity>> getCategories();
-  Future<int> addCategory(CategoryEntity category);
-  Future<void> deleteCategory(int id);
+  Future<String> addCategory(CategoryEntity category);
+  Future<void> deleteCategory(String id);
 }

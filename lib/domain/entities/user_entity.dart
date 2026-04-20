@@ -1,5 +1,5 @@
 class UserEntity {
-  final int? id;
+  final String? id;
   final String username;
   final String email;
   final String password; // In a real app, this would be hashed or handled by Firebase
@@ -22,10 +22,10 @@ class UserEntity {
 
   factory UserEntity.fromMap(Map<String, dynamic> map) {
     return UserEntity(
-      id: map['id'],
-      username: map['username'],
-      email: map['email'],
-      password: map['password'],
+      id: map['id']?.toString(),
+      username: map['username'] ?? '',
+      email: map['email'] ?? '',
+      password: map['password'] ?? '',
     );
   }
 }

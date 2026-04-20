@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../domain/entities/transaction_entity.dart';
+import '../../../domain/entities/category_entity.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/currency_state_provider.dart';
+import '../../providers/category_provider.dart';
 import 'transaction_form_screen.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../providers/filter_provider.dart';
@@ -101,6 +103,14 @@ class _TransactionsListScreenState
               );
             }
             final tx = filteredTransactions[index];
+            
+            // Resolve category name for fallback display
+            final categories = ref.watch(categoriesProvider).value ?? [];
+            final category = categories.firstWhere(
+              (c) => c.id == tx.categoryId,
+              orElse: () => CategoryEntity(name: 'Transaction', icon: '', color: ''),
+            );
+
             return ListTile(
               leading: CircleAvatar(
                 backgroundColor: tx.type == TransactionType.income
@@ -113,10 +123,16 @@ class _TransactionsListScreenState
                       : Colors.deepOrange,
                 ),
               ),
-              title: Text(tx.note.isEmpty ? 'Transaction' : tx.note),
+              title: Text(
+                tx.note.isEmpty ? category.name : tx.note,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Text(DateFormat.yMMMd().format(tx.date)),
               trailing: Text(
                 '${tx.type == TransactionType.income ? '+' : '-'} ${currencyNotifier.format(currencyNotifier.convert(tx.amount))}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,

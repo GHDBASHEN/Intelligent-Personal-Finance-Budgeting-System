@@ -1,5 +1,5 @@
 class CategoryEntity {
-  final int? id;
+  final String? id;
   final String name;
   final String icon; // Icon name as string
   final String color; // Hex color as string
@@ -25,11 +25,11 @@ class CategoryEntity {
 
   factory CategoryEntity.fromMap(Map<String, dynamic> map) {
     return CategoryEntity(
-      id: map['id'],
-      name: map['name'],
-      icon: map['icon'],
-      color: map['color'],
-      isDefault: map['is_default'] == 1,
+      id: map['id']?.toString(),
+      name: map['name'] ?? '',
+      icon: map['icon'] ?? '',
+      color: map['color'] ?? '0xFF808080',
+      isDefault: map['is_default'] == 1 || map['is_default'] == true,
     );
   }
 }
