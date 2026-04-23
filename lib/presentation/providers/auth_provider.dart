@@ -30,7 +30,7 @@ class AuthNotifier extends Notifier<AuthState> {
       final user = await ref.read(authRepositoryProvider).getCurrentUser();
       state = state.copyWith(user: user, isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false);
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -59,7 +59,11 @@ class AuthNotifier extends Notifier<AuthState> {
       final user = await ref
           .read(authRepositoryProvider)
           .register(
-            UserEntity(username: username, email: email, password: password),
+            UserEntity(
+              username: username, 
+              email: email, 
+              password: password,
+            ),
           );
       state = state.copyWith(user: user, isLoading: false);
     } catch (e) {
@@ -102,6 +106,30 @@ class AuthNotifier extends Notifier<AuthState> {
       state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<void> updateUserProfile({
+    String? username,
+    String? profileImageUrl,
+    String? preferredCurrency,
+    String? phoneNumber,
+  }) async {
+    try {
+      if (state.user == null) throw Exception('User not logged in');
+      
+      final updatedUser = state.user!.copyWith(
+        username: username ?? state.user!.username,
+        profileImageUrl: profileImageUrl ?? state.user!.profileImageUrl,
+        preferredCurrency: preferredCurrency ?? state.user!.preferredCurrency,
+        phoneNumber: phoneNumber ?? state.user!.phoneNumber,
+      );
+      
+      final savedUser = await ref.read(authRepositoryProvider).updateUser(updatedUser);
+      state = state.copyWith(user: savedUser, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
       rethrow;
     }
   }

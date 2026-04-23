@@ -10,6 +10,7 @@ abstract class AuthRepository {
   Future<void> forgotPassword(String email);
   Future<bool> checkEmailExists(String email);
   Future<void> updatePassword(String email, String newPassword);
+  Future<UserEntity> updateUser(UserEntity user);
 }
 
 abstract class TransactionRepository {

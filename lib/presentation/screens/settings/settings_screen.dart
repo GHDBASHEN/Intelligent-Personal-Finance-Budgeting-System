@@ -122,11 +122,9 @@ class SettingsScreen extends ConsumerWidget {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'finance_summary_$timestamp.csv';
       
-      // Automatically find the Downloads location
       Directory? directory;
       if (Platform.isAndroid) {
         directory = Directory('/storage/emulated/0/Download');
-        // Fallback for some Android versions if the direct path is inaccessible
         if (!await directory.exists()) {
           final list = await getExternalStorageDirectories(type: StorageDirectory.downloads);
           if (list != null && list.isNotEmpty) {
@@ -139,7 +137,6 @@ class SettingsScreen extends ConsumerWidget {
         directory = await getDownloadsDirectory();
       }
 
-      // Final fallback to documents if Downloads is still null
       directory ??= await getApplicationDocumentsDirectory();
 
       final String path = '${directory.path}/$fileName';
@@ -158,7 +155,6 @@ class SettingsScreen extends ConsumerWidget {
           ),
         );
 
-        // Trigger system-level tray notification with the file path as payload
         ref.read(notificationServiceProvider).showDownloadNotification(
           'Export Successful',
           'Tap to open your financial summary',

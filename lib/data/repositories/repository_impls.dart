@@ -25,12 +25,13 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         if (doc.exists) {
           return UserEntity.fromMap({...doc.data()!, 'id': firebaseUser.uid});
         } else {
-          // If user exists in Auth but not in Firestore, create the doc
           final user = UserEntity(
             id: firebaseUser.uid,
             username: firebaseUser.displayName ?? email.split('@')[0],
             email: email,
-            password: '', // Password is not stored in Firestore
+            password: '',
+            preferredCurrency: 'USD',
+            createdAt: DateTime.now(),
           );
           await _firestore.collection('users').doc(firebaseUser.uid).set(user.toMap());
           return user;
@@ -57,11 +58,13 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
           id: firebaseUser.uid,
           username: user.username,
           email: user.email,
-          password: '', // Don't store password in Firestore
+          password: '',
+          preferredCurrency: null,
+          phoneNumber: user.phoneNumber,
+          createdAt: DateTime.now(),
         );
         await _firestore.collection('users').doc(firebaseUser.uid).set(newUser.toMap());
         
-        // Seed default categories for new user
         final categoryRepo = FirebaseCategoryRepositoryImpl();
         await categoryRepo.seedDefaultCategories(firebaseUser.uid);
         
@@ -73,6 +76,40 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
+  Future<UserEntity> updateUser(UserEntity user) async {
+    try {
+      final firebaseUser = _firebaseAuth.currentUser;
+      if (firebaseUser == null) throw Exception('User not logged in');
+      
+      if (user.username != firebaseUser.displayName) {
+        await firebaseUser.updateDisplayName(user.username);
+      }
+      
+      final Map<String, dynamic> userData = {};
+      if (user.username != firebaseUser.displayName) {
+        userData['username'] = user.username;
+      }
+      if (user.profileImageUrl != null) {
+        userData['profileImageUrl'] = user.profileImageUrl;
+      }
+      if (user.preferredCurrency != null) {
+        userData['preferredCurrency'] = user.preferredCurrency;
+      }
+      if (user.phoneNumber != null) {
+        userData['phoneNumber'] = user.phoneNumber;
+      }
+      
+      if (userData.isNotEmpty) {
+        await _firestore.collection('users').doc(firebaseUser.uid).update(userData);
+      }
+      
+      final updatedDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
+      return UserEntity.fromMap({...updatedDoc.data()!, 'id': firebaseUser.uid});
+    } catch (e) {
+      throw Exception('Failed to update user: $e');
+    }
+  }
 
   @override
   Future<void> logout() async {
@@ -98,8 +135,6 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<bool> checkEmailExists(String email) async {
-    // Note: This is an estimation. In Firebase, you'd usually just try login/register.
-    // Or use fetchSignInMethodsForEmail if enabled.
     return false; 
   }
 
@@ -125,8 +160,6 @@ class FirebaseTransactionRepositoryImpl implements TransactionRepository {
         .orderBy('date', descending: true);
     
     if (limit != null) query = query.limit(limit);
-    // Note: Firestore doesn't support 'offset' directly like SQL. 
-    // For simplicity, we'll skip offset or implement pagination later if needed.
 
     final snapshot = await query.get();
     return snapshot.docs.map((doc) => TransactionEntity.fromMap({...doc.data() as Map<String, dynamic>, 'id': doc.id})).toList();
@@ -216,7 +249,6 @@ class FirebaseCategoryRepositoryImpl implements CategoryRepository {
 
     if (snapshot.docs.isEmpty) {
       await seedDefaultCategories(userId);
-      // Re-fetch after seeding
       snapshot = await _firestore
           .collection('users')
           .doc(userId)
@@ -235,7 +267,7 @@ class FirebaseCategoryRepositoryImpl implements CategoryRepository {
       {'name': 'Housing', 'icon': 'home', 'color': '0xFF4CAF50', 'is_default': 1},
       {'name': 'Entertainment', 'icon': 'movie', 'color': '0xFF9C27B0', 'is_default': 1},
       {'name': 'Shopping', 'icon': 'shopping_bag', 'color': '0xFFE91E63', 'is_default': 1},
-      {'name': 'Salary', 'icon': 'payments', 'color': '0xFF2196F3', 'is_default': 1}, // Added salary
+      {'name': 'Salary', 'icon': 'payments', 'color': '0xFF2196F3', 'is_default': 1},
       {'name': 'Other', 'icon': 'more_horiz', 'color': '0xFF9E9E9E', 'is_default': 1},
     ];
 
