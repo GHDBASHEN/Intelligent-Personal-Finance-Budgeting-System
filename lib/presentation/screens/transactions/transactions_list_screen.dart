@@ -104,7 +104,6 @@ class _TransactionsListScreenState
             }
             final tx = filteredTransactions[index];
             
-            // Resolve category name for fallback display
             final categories = ref.watch(categoriesProvider).value ?? [];
             final category = categories.firstWhere(
               (c) => c.id == tx.categoryId,
