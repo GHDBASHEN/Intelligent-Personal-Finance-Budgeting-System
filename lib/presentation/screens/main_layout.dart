@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
-import '../../theme/app_colors.dart';
+import '../widgets/chatbot_widget.dart';
 
 // Create a global key outside the class that can be accessed from anywhere
 final GlobalKey<ScaffoldState> mainLayoutScaffoldKey = GlobalKey<ScaffoldState>();
@@ -27,7 +27,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       key: mainLayoutScaffoldKey,
       drawer: Drawer(
         child: Container(
-          color: isDarkMode ? AppColorsDark.cardBackground : AppColorsLight.cardBackground,
+          color: isDarkMode ? Colors.grey.shade900 : Colors.white,
           child: Column(
             children: [
               // Yellowish/Orange header section
@@ -161,7 +161,12 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
           ),
         ],
       ),
-      body: widget.child,
+      body: Stack(
+        children: [
+          widget.child,
+          const ChatbotWidget(), // Add chatbot to all screens
+        ],
+      ),
     );
   }
 
