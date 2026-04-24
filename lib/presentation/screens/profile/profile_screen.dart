@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/currency_state_provider.dart';
-import '../../widgets/custom_app_bar.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -115,7 +114,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final availableCurrencies = currencyState.rates.keys.toList()..sort();
     
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Profile'),
+      appBar: AppBar(
+        title: const Text('Profile'),
+        backgroundColor: Colors.orange,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
       body: authState.isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
