@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../screens/main_layout.dart';
 
 class AsymmetricAppBarShape extends ShapeBorder {
   const AsymmetricAppBarShape();
@@ -13,13 +12,16 @@ class AsymmetricAppBarShape extends ShapeBorder {
   @override
   Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
     Path path = Path();
-    path.lineTo(0, rect.height);
+    // Top left
+    path.lineTo(0, rect.height); // Extends downward to the full height on the left
     
+    // Create an asymmetrical bottom shape
     path.quadraticBezierTo(
-      rect.width * 0.35, rect.height,
-      rect.width, rect.height - 40,
+      rect.width * 0.35, rect.height,      // Control point
+      rect.width, rect.height - 40,        // Right side ends higher up (smaller curve/height)
     );
     
+    // Up to top right
     path.lineTo(rect.width, 0);
     path.close();
     return path;
@@ -60,40 +62,33 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
+          // Do NOT apply uniform padding, target specific spacing for asymmetrical alignment
           padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 12.0, bottom: 32.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Builder(
-                builder: (context) {
-                  if (Navigator.of(context).canPop()) {
-                    return IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 22),
-                      onPressed: () => Navigator.of(context).pop(),
-                      tooltip: 'Back',
-                    );
-                  } else {
-                    return IconButton(
-                      icon: const Icon(Icons.menu, color: Colors.white, size: 22),
-                      onPressed: () {
-                        // Use the global key from main_layout.dart
-                        if (mainLayoutScaffoldKey.currentState != null) {
-                          mainLayoutScaffoldKey.currentState!.openDrawer();
-                        }
-                      },
-                      tooltip: 'Menu',
-                    );
-                  }
-                },
-              ),
+              if (Navigator.of(context).canPop())
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 22),
+                  onPressed: () => Navigator.of(context).pop(),
+                  tooltip: 'Back',
+                )
+              else if (Scaffold.maybeOf(context)?.hasDrawer ?? false)
+                IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.white, size: 22),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                  tooltip: 'Menu',
+                )
+              else
+                const SizedBox(width: 48),
               
               Expanded(
                 child: Text(
                   title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 22, // Constant and uniform across pages
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     letterSpacing: 0.5,
@@ -113,5 +108,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
+  // Increase the overall height of the AppBar to accommodate the asymmetrical bottom
   Size get preferredSize => const Size.fromHeight(110.0);
 }
