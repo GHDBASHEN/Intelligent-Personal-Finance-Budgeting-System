@@ -21,13 +21,11 @@ class _DashboardAnalyticsScreenState
     extends ConsumerState<DashboardAnalyticsScreen> {
   String selectedPeriod = 'Month';
   bool _initialized = false;
-  int filteringYear = DateTime.now().year;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_initialized) {
-      // Delay initialization to avoid provider modification during build
       Future.microtask(() => _updateFilter(selectedPeriod));
       _initialized = true;
     }
@@ -55,7 +53,7 @@ class _DashboardAnalyticsScreenState
     } else if (period == 'Year') {
       start = DateTime(now.year, 1, 1);
     } else {
-      start = null; // All Time
+      start = null;
       end = null;
     }
 
@@ -71,7 +69,6 @@ class _DashboardAnalyticsScreenState
 
     return Scaffold(
       appBar: const CustomAppBar(title: "Analytics Dashboard"),
-      drawer: _buildDrawer(),
       body: categoriesAsync.when(
         data: (categories) =>
             _buildContent(filteredTransactions, categories, currencyNotifier, currencyData.targetCurrency),
@@ -94,7 +91,6 @@ class _DashboardAnalyticsScreenState
         .where((t) => t.type == TransactionType.expense)
         .fold(0.0, (sum, t) => sum + t.amount);
 
-    // Group expenses by category
     final categoryTotals = <String, double>{};
     for (var tx in transactions.where(
       (t) => t.type == TransactionType.expense,
@@ -103,7 +99,6 @@ class _DashboardAnalyticsScreenState
           (categoryTotals[tx.categoryId] ?? 0) + tx.amount;
     }
 
-    // Find highest category
     String highestCategoryName = "None";
     double highestAmount = 0;
     if (categoryTotals.isNotEmpty) {
@@ -213,11 +208,8 @@ class _DashboardAnalyticsScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. Main Balance "Hero" Card
         _buildMainBalanceCard(balance, currencyNotifier),
         const SizedBox(height: 16),
-        
-        // 2. Secondary Stats Grid
         Row(
           children: [
             Expanded(
@@ -242,8 +234,6 @@ class _DashboardAnalyticsScreenState
           ],
         ),
         const SizedBox(height: 12),
-        
-        // 3. Top Spending Insights Card
         _buildTopSpendingInsight(highestCategory, highestAmount, currencyNotifier),
       ],
     );
@@ -251,11 +241,10 @@ class _DashboardAnalyticsScreenState
 
   Widget _buildMainBalanceCard(double balance, dynamic currencyNotifier) {
     final isPositive = balance >= 0;
-    // We use a TweenAnimationBuilder to animate the 'value' from 0 to balance
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: balance),
-      duration: const Duration(milliseconds: 1500), // Speed of animation
-      curve: Curves.easeOutExpo, // Smooth deceleration effect
+      duration: const Duration(milliseconds: 1500),
+      curve: Curves.easeOutExpo,
       builder: (context, animatedValue, child) {
         return Container(
           width: double.infinity,
@@ -297,7 +286,6 @@ class _DashboardAnalyticsScreenState
                 ],
               ),
               const SizedBox(height: 8),
-              // Use the animatedValue here instead of the raw balance
               FittedBox(
                 child: Text(
                   currencyNotifier.format(currencyNotifier.convert(animatedValue)),
@@ -309,14 +297,13 @@ class _DashboardAnalyticsScreenState
                   ),
                 ),
               ),
-              const SizedBox(height: 10), // Small spacer
+              const SizedBox(height: 10),
             ],
           ),
         );
       },
     );
   }
-
 
   Widget _statCard(String title, double amount, Color color, IconData icon, dynamic currencyNotifier) {
     return Container(
@@ -392,60 +379,6 @@ class _DashboardAnalyticsScreenState
       ),
     );
   }
-  Widget _summaryCard(
-    String title,
-    double amount,
-    Color color,
-    dynamic currencyNotifier,
-    IconData icon,
-  ) {
-    return Card(
-      elevation: 4,
-      shadowColor: color.withOpacity(0.2),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        padding: const EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.white, color.withAlpha(12)],
-          ),
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 14, color: color),
-                const SizedBox(width: 4),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            FittedBox(
-              child: Text(
-                currencyNotifier.format(currencyNotifier.convert(amount)),
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildPieChart(
     Map<String, double> categoryTotals,
@@ -465,7 +398,6 @@ class _DashboardAnalyticsScreenState
 
     final totalExpense = categoryTotals.values.fold(0.0, (a, b) => a + b);
 
-    // Prepare legend data
     final legendItems = categoryTotals.entries.map((e) {
       final category = categories.firstWhere(
         (c) => c.id == e.key,
@@ -605,7 +537,6 @@ class _DashboardAnalyticsScreenState
     final Map<String, double> dailyExpenses = {};
     final Map<String, double> dailyIncome = {};
 
-    // Grouping logic based on period
     String dateFormat;
     if (selectedPeriod == 'Day') {
       dateFormat = 'HH:00';
@@ -626,10 +557,8 @@ class _DashboardAnalyticsScreenState
       }
     }
 
-    // Determine all unique date labels and sort them
     final allDates = {...dailyExpenses.keys, ...dailyIncome.keys}.toList();
     
-    // Custom sort for labels to be chronological
     if (selectedPeriod == 'Week') {
       final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       allDates.sort((a, b) => weekdays.indexOf(a).compareTo(weekdays.indexOf(b)));
@@ -673,7 +602,6 @@ class _DashboardAnalyticsScreenState
     }
 
     final maxY = (maxVal == 0 ? 100 : maxVal) * 1.2;
-    // Calculate width based on number of bars (minimum width 300)
     final chartWidth = (allDates.length * 60.0).clamp(300.0, 2000.0);
 
     return Container(
@@ -820,192 +748,6 @@ class _DashboardAnalyticsScreenState
             ),
           ),
       ],
-    );
-  }
-  Widget _buildDrawer() {
-    final filter = ref.watch(analyticsFilterProvider);
-    final filterNotifier = ref.read(analyticsFilterProvider.notifier);
-    
-    return Drawer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.amber.shade400, Colors.orange.shade600],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.filter_list, color: Colors.white, size: 40),
-                  SizedBox(height: 8),
-                  Text(
-                    "Analytics Filters",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              "Transaction Type",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Wrap(
-              spacing: 8,
-              children: [
-                _filterChip(
-                  label: "All",
-                  isSelected: filter.type == null,
-                  onSelected: (_) => filterNotifier.setType(null),
-                ),
-                _filterChip(
-                  label: "Income",
-                  isSelected: filter.type == TransactionType.income,
-                  onSelected: (_) => filterNotifier.setType(TransactionType.income),
-                ),
-                _filterChip(
-                  label: "Expense",
-                  isSelected: filter.type == TransactionType.expense,
-                  onSelected: (_) => filterNotifier.setType(TransactionType.expense),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 32),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              "Select Year",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int>(
-                  value: filteringYear,
-                  isExpanded: true,
-                  items: List.generate(10, (index) => DateTime.now().year - 5 + index)
-                      .map((year) => DropdownMenuItem(
-                            value: year,
-                            child: Text(year.toString()),
-                          ))
-                      .toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() {
-                        filteringYear = val;
-                      });
-                    }
-                  },
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              "Select Month",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: 12,
-              itemBuilder: (context, index) {
-                final month = index + 1;
-                final monthDate = DateTime(filteringYear, month);
-                final isSelected = filter.startDate?.month == month && 
-                                  filter.startDate?.year == filteringYear;
-                
-                return ListTile(
-                  title: Text(DateFormat('MMMM').format(monthDate)),
-                  trailing: isSelected ? const Icon(Icons.check_circle, color: Colors.orange) : null,
-                  selected: isSelected,
-                  onTap: () {
-                    final start = DateTime(filteringYear, month, 1);
-                    final end = DateTime(filteringYear, month + 1, 0, 23, 59, 59);
-                    filterNotifier.setDateRange(start, end);
-                  },
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      filterNotifier.clearFilters();
-                      Navigator.pop(context);
-                      // Re-apply the default period after clearing
-                      _updateFilter(selectedPeriod);
-                    },
-                    child: const Text("Clear All"),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text("Apply"),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filterChip({
-    required String label,
-    required bool isSelected,
-    required Function(bool) onSelected,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: onSelected,
-      selectedColor: Colors.orange.withOpacity(0.3),
-      checkmarkColor: Colors.orange,
-      labelStyle: TextStyle(
-        color: isSelected 
-            ? (isDark ? Colors.orange.shade200 : Colors.orange.shade900)
-            : (isDark ? Colors.white70 : Colors.black87),
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-      ),
     );
   }
 }
