@@ -104,7 +104,6 @@ class _TransactionsListScreenState
             }
             final tx = filteredTransactions[index];
             
-            // Resolve category name for fallback display
             final categories = ref.watch(categoriesProvider).value ?? [];
             final category = categories.firstWhere(
               (c) => c.id == tx.categoryId,
@@ -148,12 +147,14 @@ class _TransactionsListScreenState
           },
         ),
       ),
+      // CHANGE THIS - Move FAB to LEFT side
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const TransactionFormScreen()),
         ),
         child: const Icon(Icons.add),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat, // THIS MOVES FAB TO LEFT
     );
   }
 }
