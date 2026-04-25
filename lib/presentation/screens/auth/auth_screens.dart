@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pinput/pinput.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/otp_provider.dart';
 import '../../widgets/custom_app_bar.dart';
+import '../../../domain/entities/user_entity.dart';
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
@@ -142,20 +145,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _register() async {
+  Future<void> _onRegisterPressed() async {
     if (_formKey.currentState!.validate()) {
-      try {
-        await ref.read(authProvider.notifier).register(
-          _usernameController.text.trim(),
-          _emailController.text.trim(),
-          _passwordController.text,
+      final email = _emailController.text.trim();
+      
+      // Send OTP first
+      final success = await ref.read(otpProvider.notifier).sendOtp(email);
+      
+      if (success && mounted) {
+        final tempUser = UserEntity(
+          username: _usernameController.text.trim(),
+          email: email,
+          password: _passwordController.text,
         );
-        
-        if (mounted) {
-          context.go('/currency-selection');
-        }
-      } catch (e) {
-        // Error is already handled in auth provider
+        context.push('/verify-otp', extra: tempUser);
+      } else if (mounted) {
+        final error = ref.read(otpProvider).error ?? 'Failed to send OTP';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red),
+        );
       }
     }
   }
@@ -287,14 +295,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        onPressed: authState.isLoading ? null : _register,
-                        child: const Text(
-                          'Register',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        onPressed: authState.isLoading || ref.watch(otpProvider).isLoading 
+                            ? null 
+                            : _onRegisterPressed,
+                        child: ref.watch(otpProvider).isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text(
+                                'Register',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
                       const SizedBox(height: 16),
                       TextButton(
@@ -476,6 +492,158 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class OtpVerificationScreen extends ConsumerStatefulWidget {
+  final UserEntity user;
+
+  const OtpVerificationScreen({super.key, required this.user});
+
+  @override
+  ConsumerState<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
+}
+
+class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
+  final _otpController = TextEditingController();
+
+  @override
+  void dispose() {
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _verifyAndRegister() async {
+    final otp = _otpController.text.trim();
+    if (otp.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid 6-digit OTP')),
+      );
+      return;
+    }
+
+    final isVerified = ref.read(otpProvider.notifier).verifyOtp(otp);
+    if (isVerified) {
+      try {
+        await ref.read(authProvider.notifier).register(
+              widget.user.username,
+              widget.user.email,
+              widget.user.password,
+            );
+        if (mounted) {
+          context.go('/currency-selection');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Registration failed: ${e.toString()}'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } else {
+      if (mounted) {
+        final error = ref.read(otpProvider).error ?? 'Invalid OTP';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final otpState = ref.watch(otpProvider);
+    final authState = ref.watch(authProvider);
+
+    final defaultPinTheme = PinTheme(
+      width: 56,
+      height: 56,
+      textStyle: const TextStyle(
+        fontSize: 20,
+        color: Colors.black,
+        fontWeight: FontWeight.w600,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.transparent),
+      ),
+    );
+
+    return Scaffold(
+      appBar: const CustomAppBar(title: 'Verify Email'),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.mark_email_read_outlined,
+                      size: 64,
+                      color: Colors.orangeAccent,
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Enter OTP',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'We have sent a 6-digit verification code to ${widget.user.email}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 32),
+                    Pinput(
+                      length: 6,
+                      controller: _otpController,
+                      defaultPinTheme: defaultPinTheme,
+                      focusedPinTheme: defaultPinTheme.copyWith(
+                        decoration: defaultPinTheme.decoration!.copyWith(
+                          border: Border.all(color: Colors.orangeAccent),
+                        ),
+                      ),
+                      onCompleted: (_) => _verifyAndRegister(),
+                    ),
+                    const SizedBox(height: 32),
+                    if (otpState.isLoading || authState.isLoading)
+                      const CircularProgressIndicator()
+                    else ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          onPressed: _verifyAndRegister,
+                          child: const Text('Verify & Register'),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: otpState.isLoading
+                            ? null
+                            : () => ref.read(otpProvider.notifier).sendOtp(widget.user.email),
+                        child: const Text('Resend Code'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
