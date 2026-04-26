@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,8 @@ import '../screens/dashboard/past_details_screen.dart';
 import '../screens/transactions/transactions_list_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/profile/profile_screen.dart';
+import '../../domain/entities/user_entity.dart';
+
 
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
@@ -39,7 +42,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       
       final isAuthPath = state.uri.path == '/login' || 
                          state.uri.path == '/register' || 
-                         state.uri.path == '/forgot-password';
+                         state.uri.path == '/forgot-password' ||
+                         state.uri.path == '/verify-otp';
       final isCurrencyPath = state.uri.path == '/currency-selection';
       
       if (!isLoggedIn && !isAuthPath) {
@@ -67,6 +71,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
       GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
+      GoRoute(
+        path: '/verify-otp', 
+        builder: (context, state) {
+          final user = state.extra as UserEntity?;
+          if (user == null) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return OtpVerificationScreen(user: user);
+        },
+      ),
       GoRoute(path: '/currency-selection', builder: (context, state) => const CurrencySelectionScreen()),
       ShellRoute(
         builder: (context, state, child) => MainLayout(child: child),
