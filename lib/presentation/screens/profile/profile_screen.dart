@@ -53,7 +53,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         setState(() => _isUploading = true);
         
         final user = ref.read(authProvider).user;
-        if (user == null) return;
+        if (user == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please login to upload a profile picture')),
+            );
+          }
+          setState(() => _isUploading = false);
+          return;
+        }
         
         final storageRef = FirebaseStorage.instance
             .ref()
@@ -67,12 +75,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           _profileImageUrl = downloadUrl;
           _isUploading = false;
         });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile picture updated!')),
+          );
+        }
       }
     } catch (e) {
       setState(() => _isUploading = false);
       if (mounted) {
+        String errorMessage = 'Failed to upload image. Please check your connection and try again.';
+        if (e.toString().contains('permission')) {
+          errorMessage = 'Unable to access storage. Please grant permission to upload photos.';
+        } else if (e.toString().contains('network')) {
+          errorMessage = 'Network issue. Please check your internet connection.';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to upload image: $e')),
+          SnackBar(content: Text(errorMessage)),
         );
       }
     }
@@ -80,6 +100,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    setState(() => _isUploading = true);
     
     try {
       await ref.read(authProvider.notifier).updateUserProfile(
@@ -100,9 +122,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage = e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update profile: $e')),
+          SnackBar(content: Text(errorMessage)),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
       }
     }
   }
@@ -294,7 +321,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 24),
                     
                     ElevatedButton(
-                      onPressed: authState.isLoading ? null : _saveProfile,
+                      onPressed: authState.isLoading || _isUploading ? null : _saveProfile,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                         backgroundColor: Colors.orange,
@@ -303,7 +330,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: authState.isLoading
+                      child: authState.isLoading || _isUploading
                           ? const SizedBox(
                               width: 20,
                               height: 20,

@@ -66,6 +66,11 @@ class SettingsScreen extends ConsumerWidget {
                               onChanged: (val) {
                                 if (val != null) {
                                   ref.read(currencyStateProvider.notifier).setTargetCurrency(val);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Currency changed to $val')),
+                                    );
+                                  }
                                 }
                               },
                             ),
@@ -94,7 +99,28 @@ class SettingsScreen extends ConsumerWidget {
             child: ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text('Logout', style: TextStyle(color: Colors.red)),
-              onTap: () => ref.read(authProvider.notifier).logout(),
+              onTap: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Logout'),
+                    content: const Text('Are you sure you want to logout?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        child: const Text('Logout', style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await ref.read(authProvider.notifier).logout();
+                }
+              },
             ),
           ),
         ],
@@ -103,6 +129,15 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _exportToCSV(BuildContext context, List<TransactionEntity> transactions, WidgetRef ref) async {
+    if (transactions.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No transactions to export. Add some transactions first!')),
+        );
+      }
+      return;
+    }
+
     try {
       List<List<dynamic>> rows = [
         ['Date', 'Note', 'Amount', 'Type'],
@@ -146,25 +181,29 @@ class SettingsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('File saved to: $path'),
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: 'OK',
-              onPressed: () {},
-            ),
+            content: Text('✓ ${transactions.length} transactions exported to Downloads folder'),
+            duration: const Duration(seconds: 3),
           ),
         );
 
-        ref.read(notificationServiceProvider).showDownloadNotification(
+        await ref.read(notificationServiceProvider).showDownloadNotification(
           'Export Successful',
-          'Tap to open your financial summary',
+          '${transactions.length} transactions exported to $fileName',
           payload: path,
         );
       }
     } catch (e) {
       if (context.mounted) {
+        String errorMessage = 'Failed to export transactions. ';
+        if (e.toString().contains('permission')) {
+          errorMessage += 'Please grant storage permission to save files.';
+        } else if (e.toString().contains('space')) {
+          errorMessage += 'Not enough storage space on your device.';
+        } else {
+          errorMessage += 'Please try again.';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: ${e.toString()}')),
+          SnackBar(content: Text(errorMessage)),
         );
       }
     }

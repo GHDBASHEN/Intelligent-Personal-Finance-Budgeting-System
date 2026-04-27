@@ -39,7 +39,32 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       }
       return null;
     } on FirebaseAuthException catch (e) {
-      throw Exception(e.message ?? 'Authentication failed');
+      String userMessage;
+      switch (e.code) {
+        case 'user-not-found':
+          userMessage = 'No account found with this email address. Please check and try again.';
+          break;
+        case 'wrong-password':
+          userMessage = 'Incorrect password. Please try again or use "Forgot Password".';
+          break;
+        case 'invalid-email':
+          userMessage = 'The email address is not valid. Please enter a valid email.';
+          break;
+        case 'user-disabled':
+          userMessage = 'This account has been disabled. Please contact support.';
+          break;
+        case 'too-many-requests':
+          userMessage = 'Too many failed attempts. Please try again later.';
+          break;
+        case 'network-request-failed':
+          userMessage = 'Network connection issue. Please check your internet and try again.';
+          break;
+        default:
+          userMessage = 'Unable to sign in. Please check your credentials and try again.';
+      }
+      throw Exception(userMessage);
+    } catch (e) {
+      throw Exception('Something went wrong. Please try again later.');
     }
   }
 
@@ -72,7 +97,29 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       }
       throw Exception('User creation failed');
     } on FirebaseAuthException catch (e) {
-      throw Exception(e.message ?? 'Registration failed');
+      String userMessage;
+      switch (e.code) {
+        case 'email-already-in-use':
+          userMessage = 'This email is already registered. Please use a different email or try logging in.';
+          break;
+        case 'invalid-email':
+          userMessage = 'Please enter a valid email address.';
+          break;
+        case 'weak-password':
+          userMessage = 'Password is too weak. Please use at least 6 characters with a mix of letters and numbers.';
+          break;
+        case 'operation-not-allowed':
+          userMessage = 'Registration is currently unavailable. Please try again later.';
+          break;
+        case 'network-request-failed':
+          userMessage = 'Network connection issue. Please check your internet and try again.';
+          break;
+        default:
+          userMessage = 'Unable to create account. Please check your information and try again.';
+      }
+      throw Exception(userMessage);
+    } catch (e) {
+      throw Exception('Something went wrong. Please try again later.');
     }
   }
 
@@ -80,7 +127,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   Future<UserEntity> updateUser(UserEntity user) async {
     try {
       final firebaseUser = _firebaseAuth.currentUser;
-      if (firebaseUser == null) throw Exception('User not logged in');
+      if (firebaseUser == null) throw Exception('Please login to update your profile');
       
       if (user.username != firebaseUser.displayName) {
         await firebaseUser.updateDisplayName(user.username);
@@ -107,30 +154,58 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       final updatedDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
       return UserEntity.fromMap({...updatedDoc.data()!, 'id': firebaseUser.uid});
     } catch (e) {
-      throw Exception('Failed to update user: $e');
+      throw Exception('Failed to update profile. Please check your connection and try again.');
     }
   }
 
   @override
   Future<void> logout() async {
-    await _firebaseAuth.signOut();
+    try {
+      await _firebaseAuth.signOut();
+    } catch (e) {
+      throw Exception('Unable to logout. Please try again.');
+    }
   }
 
   @override
   Future<UserEntity?> getCurrentUser() async {
-    final firebaseUser = _firebaseAuth.currentUser;
-    if (firebaseUser != null) {
-      final doc = await _firestore.collection('users').doc(firebaseUser.uid).get();
-      if (doc.exists) {
-        return UserEntity.fromMap({...doc.data()!, 'id': firebaseUser.uid});
+    try {
+      final firebaseUser = _firebaseAuth.currentUser;
+      if (firebaseUser != null) {
+        final doc = await _firestore.collection('users').doc(firebaseUser.uid).get();
+        if (doc.exists) {
+          return UserEntity.fromMap({...doc.data()!, 'id': firebaseUser.uid});
+        }
       }
+      return null;
+    } catch (e) {
+      return null;
     }
-    return null;
   }
 
   @override
   Future<void> forgotPassword(String email) async {
-    await _firebaseAuth.sendPasswordResetEmail(email: email);
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      String userMessage;
+      switch (e.code) {
+        case 'user-not-found':
+          userMessage = 'No account found with this email address.';
+          break;
+        case 'invalid-email':
+          userMessage = 'Please enter a valid email address.';
+          break;
+        case 'network-request-failed':
+          userMessage = 'Network connection issue. Please check your internet and try again.';
+          break;
+        default:
+          userMessage = 'Unable to send reset email. Please try again later.';
+      }
+      throw Exception(userMessage);
+    } catch (e) {
+      throw Exception('Something went wrong. Please try again later.');
+    }
   }
 
   @override
@@ -140,8 +215,30 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> updatePassword(String email, String newPassword) async {
-    if (_firebaseAuth.currentUser != null) {
-      await _firebaseAuth.currentUser!.updatePassword(newPassword);
+    try {
+      if (_firebaseAuth.currentUser != null) {
+        await _firebaseAuth.currentUser!.updatePassword(newPassword);
+      } else {
+        throw Exception('Please login to update your password');
+      }
+    } on FirebaseAuthException catch (e) {
+      String userMessage;
+      switch (e.code) {
+        case 'weak-password':
+          userMessage = 'Password is too weak. Please use at least 6 characters with a mix of letters and numbers.';
+          break;
+        case 'requires-recent-login':
+          userMessage = 'For security reasons, please login again before changing your password.';
+          break;
+        case 'network-request-failed':
+          userMessage = 'Network connection issue. Please check your internet and try again.';
+          break;
+        default:
+          userMessage = 'Unable to update password. Please try again later.';
+      }
+      throw Exception(userMessage);
+    } catch (e) {
+      throw Exception('Something went wrong. Please try again later.');
     }
   }
 }
@@ -153,49 +250,65 @@ class FirebaseTransactionRepositoryImpl implements TransactionRepository {
   Future<List<TransactionEntity>> getTransactions({int? limit, int? offset, String? userId}) async {
     if (userId == null) return [];
     
-    Query query = _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('transactions')
-        .orderBy('date', descending: true);
-    
-    if (limit != null) query = query.limit(limit);
+    try {
+      Query query = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('transactions')
+          .orderBy('date', descending: true);
+      
+      if (limit != null) query = query.limit(limit);
 
-    final snapshot = await query.get();
-    return snapshot.docs.map((doc) => TransactionEntity.fromMap({...doc.data() as Map<String, dynamic>, 'id': doc.id})).toList();
+      final snapshot = await query.get();
+      return snapshot.docs.map((doc) => TransactionEntity.fromMap({...doc.data() as Map<String, dynamic>, 'id': doc.id})).toList();
+    } catch (e) {
+      throw Exception('Unable to load transactions. Please check your connection.');
+    }
   }
 
   @override
   Future<String> addTransaction(TransactionEntity transaction) async {
-    final docRef = await _firestore
-        .collection('users')
-        .doc(transaction.userId)
-        .collection('transactions')
-        .add(transaction.toMap());
-    return docRef.id;
+    try {
+      final docRef = await _firestore
+          .collection('users')
+          .doc(transaction.userId)
+          .collection('transactions')
+          .add(transaction.toMap());
+      return docRef.id;
+    } catch (e) {
+      throw Exception('Unable to save transaction. Please try again.');
+    }
   }
 
   @override
   Future<void> updateTransaction(TransactionEntity transaction) async {
-    await _firestore
-        .collection('users')
-        .doc(transaction.userId)
-        .collection('transactions')
-        .doc(transaction.id)
-        .update(transaction.toMap());
+    try {
+      await _firestore
+          .collection('users')
+          .doc(transaction.userId)
+          .collection('transactions')
+          .doc(transaction.id)
+          .update(transaction.toMap());
+    } catch (e) {
+      throw Exception('Unable to update transaction. Please try again.');
+    }
   }
 
   @override
   Future<void> deleteTransaction(String id) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
-    
-    await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('transactions')
-        .doc(id)
-        .delete();
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) throw Exception('Please login to delete transactions');
+      
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('transactions')
+          .doc(id)
+          .delete();
+    } catch (e) {
+      throw Exception('Unable to delete transaction. Please try again.');
+    }
   }
 
   @override
@@ -208,28 +321,32 @@ class FirebaseTransactionRepositoryImpl implements TransactionRepository {
   }) async {
     if (userId == null) return [];
 
-    Query query = _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('transactions');
+    try {
+      Query query = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('transactions');
 
-    if (startDate != null) {
-      query = query.where('date', isGreaterThanOrEqualTo: startDate.toIso8601String());
-    }
-    if (endDate != null) {
-      query = query.where('date', isLessThanOrEqualTo: endDate.toIso8601String());
-    }
-    if (categoryId != null) {
-      query = query.where('category_id', isEqualTo: categoryId);
-    }
-    if (type != null) {
-      query = query.where('type', isEqualTo: type.name);
-    }
+      if (startDate != null) {
+        query = query.where('date', isGreaterThanOrEqualTo: startDate.toIso8601String());
+      }
+      if (endDate != null) {
+        query = query.where('date', isLessThanOrEqualTo: endDate.toIso8601String());
+      }
+      if (categoryId != null) {
+        query = query.where('category_id', isEqualTo: categoryId);
+      }
+      if (type != null) {
+        query = query.where('type', isEqualTo: type.name);
+      }
 
-    query = query.orderBy('date', descending: true);
+      query = query.orderBy('date', descending: true);
 
-    final snapshot = await query.get();
-    return snapshot.docs.map((doc) => TransactionEntity.fromMap({...doc.data() as Map<String, dynamic>, 'id': doc.id})).toList();
+      final snapshot = await query.get();
+      return snapshot.docs.map((doc) => TransactionEntity.fromMap({...doc.data() as Map<String, dynamic>, 'id': doc.id})).toList();
+    } catch (e) {
+      throw Exception('Unable to filter transactions. Please try again.');
+    }
   }
 }
 
@@ -238,25 +355,29 @@ class FirebaseCategoryRepositoryImpl implements CategoryRepository {
 
   @override
   Future<List<CategoryEntity>> getCategories() async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return [];
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return [];
 
-    var snapshot = await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('categories')
-        .get();
-
-    if (snapshot.docs.isEmpty) {
-      await seedDefaultCategories(userId);
-      snapshot = await _firestore
+      var snapshot = await _firestore
           .collection('users')
           .doc(userId)
           .collection('categories')
           .get();
-    }
 
-    return snapshot.docs.map((doc) => CategoryEntity.fromMap({...doc.data(), 'id': doc.id})).toList();
+      if (snapshot.docs.isEmpty) {
+        await seedDefaultCategories(userId);
+        snapshot = await _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('categories')
+            .get();
+      }
+
+      return snapshot.docs.map((doc) => CategoryEntity.fromMap({...doc.data(), 'id': doc.id})).toList();
+    } catch (e) {
+      throw Exception('Unable to load categories. Please check your connection.');
+    }
   }
 
   Future<void> seedDefaultCategories(String userId) async {
@@ -280,27 +401,35 @@ class FirebaseCategoryRepositoryImpl implements CategoryRepository {
 
   @override
   Future<String> addCategory(CategoryEntity category) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) throw Exception('User not logged in');
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) throw Exception('Please login to add categories');
 
-    final docRef = await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('categories')
-        .add(category.toMap());
-    return docRef.id;
+      final docRef = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('categories')
+          .add(category.toMap());
+      return docRef.id;
+    } catch (e) {
+      throw Exception('Unable to add category. Please try again.');
+    }
   }
 
   @override
   Future<void> deleteCategory(String id) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) throw Exception('Please login to delete categories');
 
-    await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('categories')
-        .doc(id)
-        .delete();
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('categories')
+          .doc(id)
+          .delete();
+    } catch (e) {
+      throw Exception('Unable to delete category. Please try again.');
+    }
   }
 }
