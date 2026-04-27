@@ -9,6 +9,7 @@ import 'presentation/providers/theme_provider.dart';
 import 'theme/app_theme.dart';
 import 'presentation/providers/notification_service.dart';
 
+//comment added now..
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
