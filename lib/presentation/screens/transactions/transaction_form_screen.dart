@@ -29,6 +29,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
   late TransactionType _type;
   String? _selectedCategoryId;
   String? _selectedEntryCurrency;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -46,55 +47,86 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
     super.dispose();
   }
 
-  void _saveForm() {
+  void _saveForm() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      final user = ref.read(authProvider).user;
       
-      String? categoryId = _selectedCategoryId;
-      if (_type == TransactionType.income) {
-        final categories = ref.read(categoriesProvider).value;
-        if (categories != null && categories.isNotEmpty) {
-          final incomeCategory = categories.firstWhere(
-            (c) => c.name.toLowerCase() == 'salary',
-            orElse: () => categories.first,
+      if (_isSaving) return;
+      setState(() => _isSaving = true);
+      
+      try {
+        final user = ref.read(authProvider).user;
+        if (user == null) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please login to save transactions')),
+            );
+          }
+          return;
+        }
+        
+        String? categoryId = _selectedCategoryId;
+        if (_type == TransactionType.income) {
+          final categories = ref.read(categoriesProvider).value;
+          if (categories != null && categories.isNotEmpty) {
+            final incomeCategory = categories.firstWhere(
+              (c) => c.name.toLowerCase() == 'salary',
+              orElse: () => categories.first,
+            );
+            categoryId = incomeCategory.id;
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Loading categories... Please try again.')),
+            );
+            return;
+          }
+        }
+
+        if (categoryId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please select a category for this transaction')),
           );
-          categoryId = incomeCategory.id;
+          return;
+        }
+
+        double finalAmount = _amount;
+        if (_selectedEntryCurrency != null) {
+          finalAmount = ref.read(currencyStateProvider.notifier).convertToBase(_amount, _selectedEntryCurrency!);
         } else {
-          categoryId = "1"; // default index in local DB (as string)
+          final targetCurrency = ref.read(currencyStateProvider).targetCurrency;
+          finalAmount = ref.read(currencyStateProvider.notifier).convertToBase(_amount, targetCurrency);
+        }
+
+        final newTransaction = TransactionEntity(
+          id: widget.transaction?.id,
+          userId: user.id!,
+          categoryId: categoryId,
+          amount: finalAmount,
+          note: _noteController.text,
+          date: _selectedDate,
+          type: _type,
+        );
+
+        await ref.read(transactionProvider.notifier).addTransaction(newTransaction);
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(widget.transaction == null ? 'Transaction added successfully!' : 'Transaction updated successfully!')),
+          );
+          context.pop();
+        }
+      } catch (e) {
+        if (context.mounted) {
+          String errorMessage = e.toString().replaceFirst('Exception: ', '');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMessage)),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isSaving = false);
         }
       }
-
-      if (user == null || categoryId == null) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: User or category is missing. Please restart the app or select a category.')),
-        );
-        return;
-      }
-
-      double finalAmount = _amount;
-      if (_selectedEntryCurrency != null) {
-        finalAmount = ref.read(currencyStateProvider.notifier).convertToBase(_amount, _selectedEntryCurrency!);
-      } else {
-        // If they didn't manually pick an override, treat their input as if it's currently the targetCurrency.
-        // E.g., if their target feature shows EUR everywhere, assume they entered the amount in EUR.
-        final targetCurrency = ref.read(currencyStateProvider).targetCurrency;
-        finalAmount = ref.read(currencyStateProvider.notifier).convertToBase(_amount, targetCurrency);
-      }
-
-      final newTransaction = TransactionEntity(
-        id: widget.transaction?.id,
-        userId: user.id!,
-        categoryId: categoryId,
-        amount: finalAmount,
-        note: _noteController.text,
-        date: _selectedDate,
-        type: _type,
-      );
-
-      ref.read(transactionProvider.notifier).addTransaction(newTransaction);
-      context.pop();
     }
   }
 
@@ -167,13 +199,14 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                      LengthLimitingTextInputFormatter(12), // Roughly 10 digits + decimal + 2 decimals
+                      LengthLimitingTextInputFormatter(12),
                     ],
                     validator: (val) {
-                      if (val == null || double.tryParse(val) == null) return 'Enter valid amount';
-                      final amount = double.parse(val);
-                      if (amount > 1000000000) return 'Amount exceeds limit (1 Billion)';
+                      if (val == null || val.isEmpty) return 'Please enter an amount';
+                      final amount = double.tryParse(val);
+                      if (amount == null) return 'Please enter a valid number';
                       if (amount <= 0) return 'Amount must be greater than 0';
+                      if (amount > 999999999) return 'Amount is too large';
                       return null;
                     },
                     onSaved: (val) => _amount = double.parse(val!),
@@ -184,7 +217,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
               if (_type == TransactionType.expense) ...[
                 categoriesAsync.when(
                   data: (categories) => DropdownButtonFormField<String>(
-                    initialValue: _selectedCategoryId,
+                    value: _selectedCategoryId,
                     decoration: const InputDecoration(
                       labelText: 'Category',
                       border: OutlineInputBorder(),
@@ -198,10 +231,22 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                         )
                         .toList(),
                     onChanged: (val) => setState(() => _selectedCategoryId = val),
-                    validator: (val) => val == null ? 'Select category' : null,
+                    validator: (val) => val == null ? 'Please select a category' : null,
                   ),
-                  loading: () => const CircularProgressIndicator(),
-                  error: (e, s) => Text('Error loading categories: \$e'),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (e, s) => Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.orange, size: 32),
+                        const SizedBox(height: 8),
+                        Text('Unable to load categories. Pull down to refresh.', textAlign: TextAlign.center),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -227,7 +272,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                 maxLengthEnforcement: MaxLengthEnforcement.enforced,
                 decoration: InputDecoration(
                   labelText: 'Note / Product',
-                  counterText: "", // Hide the counter for cleaner UI
+                  counterText: "",
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -245,16 +290,23 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                         MaterialPageRoute(builder: (_) => const ScannerScreen()),
                       );
                       if (barcode != null && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fetching product details...')));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Fetching product details...')),
+                        );
                         final productName = await OpenFoodFactsService().getProductName(barcode);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                          if (productName != null) {
+                          if (productName != null && productName.isNotEmpty) {
                             setState(() {
                               _noteController.text = productName;
                             });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Found: $productName')),
+                            );
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Product not found in Open Food Facts')));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Product not found. You can manually enter the name.')),
+                            );
                           }
                         }
                       }
@@ -264,11 +316,17 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _saveForm,
+                onPressed: _isSaving ? null : _saveForm,
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size.fromHeight(50),
                 ),
-                child: const Text('Save Transaction'),
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save Transaction'),
               ),
             ],
           ),

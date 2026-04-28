@@ -37,7 +37,6 @@ class TransactionNotifier extends Notifier<TransactionState> {
 
   @override
   TransactionState build() {
-    // Watch AuthState carefully: when the user log-in resolves, recreate our state and finally fetch.
     final authState = ref.watch(authProvider);
     
     if (authState.user != null) {
@@ -59,7 +58,7 @@ class TransactionNotifier extends Notifier<TransactionState> {
 
     try {
       final user = ref.read(authProvider).user;
-      if (user == null) throw Exception('User not authenticated');
+      if (user == null) throw Exception('Please login to view transactions');
 
       final newTransactions = await ref
           .read(transactionRepositoryProvider)
@@ -80,16 +79,21 @@ class TransactionNotifier extends Notifier<TransactionState> {
         );
       }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      String errorMessage = e.toString().replaceFirst('Exception: ', '');
+      if (!errorMessage.startsWith('Please') && !errorMessage.startsWith('Unable') && !errorMessage.startsWith('Network')) {
+        errorMessage = 'Unable to load transactions. Please pull down to refresh.';
+      }
+      state = state.copyWith(isLoading: false, error: errorMessage);
     }
   }
 
   Future<void> addTransaction(TransactionEntity transaction) async {
     try {
       await ref.read(transactionRepositoryProvider).addTransaction(transaction);
-      fetchTransactions(refresh: true); // Refresh list
+      fetchTransactions(refresh: true);
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      String errorMessage = e.toString().replaceFirst('Exception: ', '');
+      state = state.copyWith(error: errorMessage);
     }
   }
 
@@ -100,11 +104,11 @@ class TransactionNotifier extends Notifier<TransactionState> {
         transactions: state.transactions.where((t) => t.id != id).toList(),
       );
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      String errorMessage = e.toString().replaceFirst('Exception: ', '');
+      state = state.copyWith(error: errorMessage);
     }
   }
 
-  // Method for complex filtering
   Future<void> applyFilters({
     DateTime? startDate,
     DateTime? endDate,
@@ -114,6 +118,8 @@ class TransactionNotifier extends Notifier<TransactionState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final user = ref.read(authProvider).user;
+      if (user == null) throw Exception('Please login to filter transactions');
+      
       final filtered = await ref
           .read(transactionRepositoryProvider)
           .filterTransactions(
@@ -127,9 +133,10 @@ class TransactionNotifier extends Notifier<TransactionState> {
         transactions: filtered,
         isLoading: false,
         hasReachedMax: true,
-      ); // Disable pagination for filtered results in this simple mock
+      );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      String errorMessage = e.toString().replaceFirst('Exception: ', '');
+      state = state.copyWith(isLoading: false, error: errorMessage);
     }
   }
 }
