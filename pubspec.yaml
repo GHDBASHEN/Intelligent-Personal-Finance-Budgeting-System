@@ -64,7 +64,8 @@ dependencies:
   shimmer: ^3.0.0
   sqflite: ^2.4.2
   timezone: ^0.11.0
-
+  flutter_launcher_icons: ^0.13.1
+  
 dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:
@@ -106,3 +107,19 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/playstore.png"
+  adaptive_icon_background: "#0a0a0f"
+  adaptive_icon_foreground: "assets/icon/playstore.png"
+  min_sdk_size: 21 # Required for Android if using newer features
+  web:
+    generate: true
+    image_path: "assets/icon/playstore.png"
+    background_color: "#0a0a0f" # Your app's dark theme background hex
+    theme_color: "#0a0a0f"
+  windows:
+    generate: true
+    image_path: "assets/icon/playstore.png"
+    icon_size: 48 # Optional: adjust for Windows

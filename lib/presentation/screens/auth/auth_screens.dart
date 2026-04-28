@@ -24,6 +24,8 @@ class LoginScreen extends ConsumerWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
             child: Card(
+              elevation: 0,
+              color: Colors.transparent,
               child: Padding(
                 padding: const EdgeInsets.all(32.0),
                 child: Column(
@@ -180,6 +182,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
             child: Card(
+              elevation: 0,
+              color: Colors.transparent,
               child: Padding(
                 padding: const EdgeInsets.all(32.0),
                 child: Form(
