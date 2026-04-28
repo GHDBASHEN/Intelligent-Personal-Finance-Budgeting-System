@@ -30,6 +30,7 @@ environment:
 dependencies:
   camera: ^0.11.4
   cloud_firestore: ^6.3.0
+  cloudinary_public: ^0.23.1
   csv: ^7.1.0
   cupertino_icons: ^1.0.8
   email_otp: ^3.1.0

@@ -2,9 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/currency_state_provider.dart';
+import '../../providers/infrastructure_providers.dart';
 import '../../widgets/custom_app_bar.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -53,37 +53,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         setState(() => _isUploading = true);
         
         final user = ref.read(authProvider).user;
-        if (user == null) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please login to upload a profile picture')),
-            );
-          }
-          setState(() => _isUploading = false);
-          return;
+        if (user == null || user.id == null) {
+          throw Exception('User not authenticated or ID missing');
         }
         
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('profile_images')
-            .child('${user.id}.jpg');
+        final cloudinaryService = ref.read(cloudinaryServiceProvider);
+        final imageUrl = await cloudinaryService.uploadProfileImage(
+          File(pickedFile.path), 
+          user.id!,
+        );
         
-        await storageRef.putFile(File(pickedFile.path));
-        final downloadUrl = await storageRef.getDownloadURL();
-        
-        setState(() {
-          _profileImageUrl = downloadUrl;
-          _isUploading = false;
-        });
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile picture updated!')),
-          );
+        if (imageUrl != null) {
+          setState(() {
+            _profileImageUrl = imageUrl;
+            _isUploading = false;
+          });
+        } else {
+          throw Exception('Failed to get image URL from Cloudinary');
         }
       }
     } catch (e) {
       setState(() => _isUploading = false);
+      debugPrint('Upload error: $e');
+      
       if (mounted) {
         String errorMessage = 'Failed to upload image. Please check your connection and try again.';
         if (e.toString().contains('permission')) {
@@ -92,7 +84,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           errorMessage = 'Network issue. Please check your internet connection.';
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
+          SnackBar(
+            content: Text('Failed to upload image: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
         );
       }
     }
