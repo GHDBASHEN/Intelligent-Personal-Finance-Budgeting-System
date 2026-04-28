@@ -17,13 +17,15 @@ class LoginScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Welcome Back'),
+      appBar: const CustomAppBar(title: 'Welcome Back', showLeading: false),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
             child: Card(
+              elevation: 0,
+              color: Colors.transparent,
               child: Padding(
                 padding: const EdgeInsets.all(32.0),
                 child: Column(
@@ -180,6 +182,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
             child: Card(
+              elevation: 0,
+              color: Colors.transparent,
               child: Padding(
                 padding: const EdgeInsets.all(32.0),
                 child: Form(
