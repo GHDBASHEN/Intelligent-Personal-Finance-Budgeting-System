@@ -17,7 +17,7 @@ class LoginScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Welcome Back'),
+      appBar: const CustomAppBar(title: 'Welcome Back', showLeading: false),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),

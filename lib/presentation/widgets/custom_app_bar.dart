@@ -35,8 +35,9 @@ class AsymmetricAppBarShape extends ShapeBorder {
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
+  final bool showLeading;
 
-  const CustomAppBar({super.key, required this.title, this.actions});
+  const CustomAppBar({super.key, required this.title, this.actions, this.showLeading = true});
 
   @override
   Widget build(BuildContext context) {
@@ -65,28 +66,31 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Builder(
-                builder: (context) {
-                  if (Navigator.of(context).canPop()) {
-                    return IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 22),
-                      onPressed: () => Navigator.of(context).pop(),
-                      tooltip: 'Back',
-                    );
-                  } else {
-                    return IconButton(
-                      icon: const Icon(Icons.menu, color: Colors.white, size: 22),
-                      onPressed: () {
-                        // Use the global key from main_layout.dart
-                        if (mainLayoutScaffoldKey.currentState != null) {
-                          mainLayoutScaffoldKey.currentState!.openDrawer();
-                        }
-                      },
-                      tooltip: 'Menu',
-                    );
-                  }
-                },
-              ),
+              if (showLeading)
+                Builder(
+                  builder: (context) {
+                    if (Navigator.of(context).canPop()) {
+                      return IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 22),
+                        onPressed: () => Navigator.of(context).pop(),
+                        tooltip: 'Back',
+                      );
+                    } else {
+                      return IconButton(
+                        icon: const Icon(Icons.menu, color: Colors.white, size: 22),
+                        onPressed: () {
+                          // Use the global key from main_layout.dart
+                          if (mainLayoutScaffoldKey.currentState != null) {
+                            mainLayoutScaffoldKey.currentState!.openDrawer();
+                          }
+                        },
+                        tooltip: 'Menu',
+                      );
+                    }
+                  },
+                )
+              else
+                const SizedBox(width: 48),
               
               Expanded(
                 child: Text(
