@@ -210,7 +210,16 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<bool> checkEmailExists(String email) async {
-    return false; 
+    try {
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+      return querySnapshot.docs.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
   }
 
   @override

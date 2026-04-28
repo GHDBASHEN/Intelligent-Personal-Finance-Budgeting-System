@@ -151,6 +151,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (_formKey.currentState!.validate()) {
       final email = _emailController.text.trim();
       
+      // Check if email is already registered
+      final emailExists = await ref.read(authProvider.notifier).checkEmailExists(email);
+      if (emailExists) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('This email is already registered. Please login.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          if (Navigator.canPop(context)) {
+            context.pop();
+          } else {
+            context.go('/login');
+          }
+        }
+        return;
+      }
+      
       // Send OTP first
       final success = await ref.read(otpProvider.notifier).sendOtp(email);
       
