@@ -216,23 +216,28 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
               const SizedBox(height: 16),
               if (_type == TransactionType.expense) ...[
                 categoriesAsync.when(
-                  data: (categories) => DropdownButtonFormField<String>(
-                    value: _selectedCategoryId,
-                    decoration: const InputDecoration(
-                      labelText: 'Category',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: categories
-                        .map(
-                          (cat) => DropdownMenuItem(
-                            value: cat.id,
-                            child: Text(cat.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (val) => setState(() => _selectedCategoryId = val),
-                    validator: (val) => val == null ? 'Please select a category' : null,
-                  ),
+                  data: (categories) {
+                    final expenseCategories = categories.where((cat) => cat.name.toLowerCase() != 'salary').toList();
+                    final validValue = expenseCategories.any((c) => c.id == _selectedCategoryId) ? _selectedCategoryId : null;
+                    
+                    return DropdownButtonFormField<String>(
+                      value: validValue,
+                      decoration: const InputDecoration(
+                        labelText: 'Category',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: expenseCategories
+                          .map(
+                            (cat) => DropdownMenuItem(
+                              value: cat.id,
+                              child: Text(cat.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) => setState(() => _selectedCategoryId = val),
+                      validator: (val) => val == null ? 'Please select a category' : null,
+                    );
+                  },
                   loading: () => const Padding(
                     padding: EdgeInsets.all(16.0),
                     child: Center(child: CircularProgressIndicator()),
