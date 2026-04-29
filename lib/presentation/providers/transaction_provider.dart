@@ -90,7 +90,7 @@ class TransactionNotifier extends Notifier<TransactionState> {
   Future<void> addTransaction(TransactionEntity transaction) async {
     try {
       await ref.read(transactionRepositoryProvider).addTransaction(transaction);
-      fetchTransactions(refresh: true);
+      await fetchTransactions(refresh: true);
     } catch (e) {
       String errorMessage = e.toString().replaceFirst('Exception: ', '');
       state = state.copyWith(error: errorMessage);
@@ -123,7 +123,7 @@ class TransactionNotifier extends Notifier<TransactionState> {
       final filtered = await ref
           .read(transactionRepositoryProvider)
           .filterTransactions(
-            userId: user?.id,
+            userId: user.id,
             startDate: startDate,
             endDate: endDate,
             categoryId: categoryId,

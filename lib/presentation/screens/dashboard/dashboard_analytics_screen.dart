@@ -7,8 +7,8 @@ import '../../providers/filter_provider.dart';
 import '../../providers/currency_state_provider.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../../domain/entities/category_entity.dart';
+import '../../providers/transaction_provider.dart';
 import '../../widgets/custom_app_bar.dart';
-
 class DashboardAnalyticsScreen extends ConsumerStatefulWidget {
   const DashboardAnalyticsScreen({super.key});
 
@@ -114,9 +114,14 @@ class _DashboardAnalyticsScreenState
       highestAmount = categoryTotals[topCatId]!;
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref.read(transactionProvider.notifier).fetchTransactions(refresh: true);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildPeriodSelector(),
@@ -144,6 +149,7 @@ class _DashboardAnalyticsScreenState
           _buildTrendBarChart(transactions),
           const SizedBox(height: 32),
         ],
+      ),
       ),
     );
   }
