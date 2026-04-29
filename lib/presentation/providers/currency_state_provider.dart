@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'infrastructure_providers.dart';
+import 'auth_provider.dart';
 
 class CurrencyState {
   final String baseCurrency;
@@ -37,9 +38,30 @@ class CurrencyState {
 class CurrencyNotifier extends Notifier<CurrencyState> {
   @override
   CurrencyState build() {
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.user != null) {
+        final newCurrency = next.user!.preferredCurrency;
+        if (newCurrency != null && newCurrency.isNotEmpty && newCurrency != state.targetCurrency) {
+          setTargetCurrency(newCurrency);
+        }
+      } else {
+        if (state.targetCurrency != 'USD') {
+          setTargetCurrency('USD');
+        }
+      }
+    });
+
     // Initial fetch
     Future.microtask(() => fetchRates());
-    return CurrencyState();
+    
+    final initialUser = ref.read(authProvider).user;
+    final initialCurrency = initialUser?.preferredCurrency;
+    
+    return CurrencyState(
+      targetCurrency: (initialCurrency != null && initialCurrency.isNotEmpty) 
+          ? initialCurrency 
+          : 'USD',
+    );
   }
 
   Future<void> fetchRates() async {
