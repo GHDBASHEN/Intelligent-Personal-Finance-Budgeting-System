@@ -36,7 +36,7 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'Finance System',
+      title: 'Uni Wave',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.neonTheme,
       themeMode: themeMode,
