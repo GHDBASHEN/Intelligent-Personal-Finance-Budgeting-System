@@ -123,7 +123,7 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
                 });
               },
               backgroundColor: Colors.orange,
-              child: const Icon(Icons.chat, color: Colors.white),
+              child: const Icon(Icons.smart_toy, color: Colors.white),
             ),
           ),
         
@@ -169,7 +169,7 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
                           CircleAvatar(
                             radius: 20,
                             backgroundColor: Colors.white,
-                            child: Icon(Icons.chat_bubble, color: Colors.orange.shade600, size: 20),
+                            child: Icon(Icons.smart_toy, color: Colors.orange.shade600, size: 20),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -214,7 +214,7 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    Icons.chat_bubble_outline,
+                                    Icons.smart_toy_outlined,
                                     size: 50,
                                     color: Colors.grey.shade400,
                                   ),
