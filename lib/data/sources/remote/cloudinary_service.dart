@@ -22,7 +22,7 @@ class CloudinaryService {
         CloudinaryFile.fromFile(
           file.path,
           folder: 'profile_images',
-          publicId: userId,
+          publicId: '${userId}_${DateTime.now().millisecondsSinceEpoch}',
           context: {
             'userId': userId,
           },
