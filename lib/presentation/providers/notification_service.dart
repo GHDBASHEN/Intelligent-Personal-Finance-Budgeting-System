@@ -64,6 +64,14 @@ class NotificationService {
       
       await androidImplementation?.createNotificationChannel(exportChannel);
       await androidImplementation?.createNotificationChannel(reminderChannel);
+    }
+  }
+
+  Future<void> requestPermissionsAndSchedule() async {
+    if (Platform.isAndroid) {
+      final androidImplementation = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
       
       // Request permission for Android 13+
       await androidImplementation?.requestNotificationsPermission();

@@ -20,17 +20,33 @@ void main() async {
   );
 
   // Initialize notifications
-  final notificationService = NotificationService();
-  await notificationService.init();
+  final container = ProviderContainer();
+  await container.read(notificationServiceProvider).init();
 
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(UncontrolledProviderScope(
+    container: container,
+    child: const MyApp(),
+  ));
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationServiceProvider).requestPermissionsAndSchedule();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
 
