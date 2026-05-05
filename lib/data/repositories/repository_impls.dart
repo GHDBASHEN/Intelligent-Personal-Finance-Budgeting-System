@@ -254,6 +254,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
 
 class FirebaseTransactionRepositoryImpl implements TransactionRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  DocumentSnapshot? _lastDocument;
 
   @override
   Future<List<TransactionEntity>> getTransactions({int? limit, int? offset, String? userId}) async {
@@ -266,9 +267,22 @@ class FirebaseTransactionRepositoryImpl implements TransactionRepository {
           .collection('transactions')
           .orderBy('date', descending: true);
       
+      if (offset == null || offset == 0) {
+        _lastDocument = null;
+      }
+
+      if (_lastDocument != null && offset != null && offset > 0) {
+        query = query.startAfterDocument(_lastDocument!);
+      }
+
       if (limit != null) query = query.limit(limit);
 
       final snapshot = await query.get();
+
+      if (snapshot.docs.isNotEmpty) {
+        _lastDocument = snapshot.docs.last;
+      }
+
       return snapshot.docs.map((doc) => TransactionEntity.fromMap({...doc.data() as Map<String, dynamic>, 'id': doc.id})).toList();
     } catch (e) {
       throw Exception('Unable to load transactions. Please check your connection.');
